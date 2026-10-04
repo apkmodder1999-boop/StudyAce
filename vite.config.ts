@@ -7,8 +7,33 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  vite: {
+    build: {
+      rolldownOptions: {
+        checks: {
+          moduleLevelDirective: false,
+        },
+      },
+      rollupOptions: {
+        onwarn(warning, defaultHandler) {
+          if (
+            warning.code === "MODULE_LEVEL_DIRECTIVE" ||
+            warning.message?.includes("use client")
+          ) {
+            return;
+          }
+          defaultHandler(warning);
+        },
+      },
+    },
+  },
   nitro: {
     preset: process.env["NITRO_PRESET"] || "cloudflare-pages",
+    rolldownConfig: {
+      checks: {
+        moduleLevelDirective: false,
+      },
+    },
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
