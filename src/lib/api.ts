@@ -376,6 +376,48 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
     // Network request error
   }
 
+  // 2. Secondary fallback: static rarestudy batches.json
+  try {
+    const backupRes = await fetchWithTimeout(
+      "https://rarestudy.github.io/rarestudy/batches.json",
+      {},
+      5000,
+    );
+    if (backupRes.ok) {
+      const backupJson = (await backupRes.json()) as {
+        success?: boolean;
+        batches?: RawBatchRecord[];
+      };
+      const rawBatches = backupJson.batches;
+      if (Array.isArray(rawBatches) && rawBatches.length > 0) {
+        const list: Batch[] = rawBatches
+          .filter((b) => Boolean(b && (b._id || b.batch_id || b.name)))
+          .map((b) => ({
+            _id: String(b._id || b.batch_id || b.id),
+            name: String(b.name || "Untitled Batch"),
+            class: b.class,
+            slug: b.slug,
+            byName: b.byName ?? b.cohort ?? b.description ?? "",
+            startDate: b.startDate ?? b.start_date,
+            endDate: b.endDate ?? b.end_date,
+            language: b.language ?? b.medium ?? "Hinglish",
+            previewImage: getBatchImageUrl(b.previewImage) ?? b.photo ?? b.pngUrl,
+            feeTotal: typeof b.feeTotal === "number" ? b.feeTotal : undefined,
+            type: b.type ?? b.batch_type ?? (b.class ? `Class ${b.class}` : undefined),
+            status: b.status,
+            price: b.price,
+          }));
+
+        if (list.length > 0) {
+          saveBatchesToCache(list);
+          return list;
+        }
+      }
+    }
+  } catch {
+    // Backup request error
+  }
+
   // If memory cache exists from before, use it as fallback
   if (memoryBatchesCache && memoryBatchesCache.length > 0) {
     return memoryBatchesCache;

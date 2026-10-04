@@ -27,7 +27,6 @@ import {
   type ContentItem,
 } from "@/lib/api";
 import { Shell, PageTitle, Crumbs, Loading, ErrorBox, EmptyBox } from "@/components/shell";
-import { ApiInspectorButton, ApiInspectorModal } from "@/components/ApiInspectorModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const TABS: { key: ContentType; label: string }[] = [
@@ -72,7 +71,6 @@ function TopicPage() {
         ? "DppNotes"
         : "Videos";
   const [tab, setTab] = useState<ContentType>(initialTab);
-  const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
     url: string;
@@ -113,9 +111,7 @@ function TopicPage() {
           { label: name ?? "Chapter" },
         ]}
       />
-      <PageTitle title={name ?? "Chapter"}>
-        <ApiInspectorButton onClick={() => setIsApiModalOpen(true)} itemCount={items.length} />
-      </PageTitle>
+      <PageTitle title={name ?? "Chapter"} />
 
       {/* Polished Filter Tabs */}
       <div className="mb-6 flex flex-wrap gap-2">
@@ -249,18 +245,6 @@ function TopicPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <ApiInspectorModal
-        isOpen={isApiModalOpen}
-        onClose={() => setIsApiModalOpen(false)}
-        batchId={batchId}
-        subjectId={subjectId}
-        topicId={topicId}
-        topicName={name}
-        currentTab={tab}
-        items={items}
-        isLoading={isLoading}
-      />
     </Shell>
   );
 }
