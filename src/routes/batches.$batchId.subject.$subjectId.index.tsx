@@ -13,7 +13,10 @@ export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/")({
         content: "Chapter-wise topics with video lectures, notes, DPPs and tests.",
       },
       { property: "og:title", content: "Chapters & Topics — Study Ace" },
-      { property: "og:description", content: "Open a chapter to watch lectures or download PDFs." },
+      {
+        property: "og:description",
+        content: "Open a chapter to watch lectures and access study materials.",
+      },
     ],
   }),
   component: SubjectPage,
@@ -62,7 +65,7 @@ function SubjectPage() {
       />
       <PageTitle
         title={subject?.subject ?? "Chapters"}
-        subtitle="Select a chapter to watch video lectures, download notes, or attempt DPP tests."
+        subtitle="Select a chapter to watch video lectures, view notes, or attempt DPP tests."
       />
 
       {isLoading && <Loading text="Loading chapters…" />}

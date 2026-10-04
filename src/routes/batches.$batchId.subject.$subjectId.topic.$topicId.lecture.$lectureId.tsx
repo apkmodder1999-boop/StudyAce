@@ -5,13 +5,14 @@ import Hls from "hls.js";
 import {
   Loader2,
   FileText,
-  Download,
   ArrowLeft,
   Zap,
   RotateCcw,
   RotateCw,
   Video,
-  ExternalLink,
+  Sliders,
+  Eye,
+  X,
 } from "lucide-react";
 import {
   API_BASE,
@@ -22,8 +23,10 @@ import {
   resolvePlayback,
   extractVideoId,
   type ContentItem,
+  type Attachment,
 } from "@/lib/api";
 import { Shell, Crumbs, ErrorBox } from "@/components/shell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute(
   "/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId",
@@ -47,6 +50,11 @@ export const Route = createFileRoute(
 
 function LecturePage() {
   const { batchId, subjectId, topicId, lectureId } = Route.useParams();
+  const [previewPdf, setPreviewPdf] = useState<{
+    name: string;
+    url: string;
+    proxyUrl: string;
+  } | null>(null);
 
   // 1. Fetch item from content pages
   const {
@@ -66,7 +74,7 @@ function LecturePage() {
     },
   });
 
-  // 2. Query direct S3 MP4 stream from Heroku proxy: /v1/videos/{id}
+  // 2. Query direct video stream from proxy or resolution
   const { data: videoData, isLoading: videoLoading } = useQuery({
     queryKey: ["lecture-video-stream", lectureId, itemData?.videoDetails?._id],
     queryFn: async () => {
@@ -111,7 +119,19 @@ function LecturePage() {
     enabled: true,
   });
 
-  const isLoading = itemLoading && videoLoading;
+  // Show loading while either item or video stream details are fetching
+  const isOverallLoading = itemLoading || videoLoading;
+
+  const handlePreviewPdf = (att: Attachment) => {
+    const rawUrl = att.url || att.download_url || att.fileUrl || "";
+    const cleanUrl = rawUrl.replace("https://a.pimaxer.in", API_BASE);
+    const proxyUrl = `/api/public/pw/pdf?url=${encodeURIComponent(cleanUrl)}`;
+    setPreviewPdf({
+      name: att.name || "Lecture Document.pdf",
+      url: cleanUrl,
+      proxyUrl,
+    });
+  };
 
   return (
     <Shell>
@@ -142,16 +162,19 @@ function LecturePage() {
         ]}
       />
 
-      {isLoading && (
-        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-surface p-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-xs text-muted-foreground">Loading video stream details…</p>
+      {isOverallLoading && (
+        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-white border border-sky-100 p-8 text-center rounded-2xl shadow-sm">
+          <Loader2 className="h-9 w-9 animate-spin text-sky-600" />
+          <p className="text-sm font-bold text-slate-800">Loading lecture…</p>
+          <p className="text-xs text-slate-400 font-medium">
+            Please wait while the video stream is initialized
+          </p>
         </div>
       )}
 
       {itemError && <ErrorBox message={(itemError as Error).message} />}
 
-      {!isLoading && (
+      {!isOverallLoading && (
         <LecturePlayerView
           item={itemData ?? { _id: lectureId }}
           videoData={videoData}
@@ -159,8 +182,32 @@ function LecturePage() {
           subjectId={subjectId}
           topicId={topicId}
           lectureId={lectureId}
+          onPreviewPdf={handlePreviewPdf}
         />
       )}
+
+      {/* In-App PDF Preview Dialog (No download, no new tab) */}
+      <Dialog open={Boolean(previewPdf)} onOpenChange={(open) => !open && setPreviewPdf(null)}>
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 bg-white">
+          <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
+            <div>
+              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                {previewPdf?.name}
+              </DialogTitle>
+              <p className="text-[11px] text-muted-foreground mt-0.5">In-app document viewer</p>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 w-full h-full min-h-0 bg-slate-50 rounded-lg overflow-hidden border border-border">
+            {previewPdf && (
+              <iframe
+                src={previewPdf.proxyUrl || previewPdf.url}
+                className="w-full h-full border-0"
+                title={previewPdf.name}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
@@ -172,6 +219,7 @@ function LecturePlayerView({
   subjectId,
   topicId,
   lectureId,
+  onPreviewPdf,
 }: {
   item: ContentItem;
   videoData:
@@ -188,13 +236,21 @@ function LecturePlayerView({
   subjectId: string;
   topicId: string;
   lectureId: string;
+  onPreviewPdf: (att: Attachment) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const files = itemAttachments(item);
   const title =
     videoData?.name || item.topic || item.videoDetails?.name || item.name || "Lecture Video";
   const duration = videoData?.duration || item.videoDetails?.duration;
   const thumb = videoData?.image || item.videoDetails?.image;
+
+  // Multiple Quality states
+  const [qualities, setQualities] = useState<
+    { label: string; levelIndex: number; height?: number }[]
+  >([]);
+  const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
 
   // Resolve best stream URL
   const rawStreamUrl =
@@ -213,17 +269,25 @@ function LecturePlayerView({
   );
 
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [, setIsPlaying] = useState(false);
 
   // Initialize playback via native HTML5 video or HLS.js
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
-    // Handle direct MP4 playback
+    // Direct MP4 playback
     if (isDirectMp4 || streamUrl.endsWith(".mp4")) {
       video.src = streamUrl;
       video.load();
+      // MP4 default qualities for switching indicator
+      setQualities([
+        { label: "Auto", levelIndex: -1 },
+        { label: "1080p", levelIndex: 1080, height: 1080 },
+        { label: "720p", levelIndex: 720, height: 720 },
+        { label: "480p", levelIndex: 480, height: 480 },
+        { label: "360p", levelIndex: 360, height: 360 },
+      ]);
       return;
     }
 
@@ -233,19 +297,51 @@ function LecturePlayerView({
 
     if (Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true });
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        if (data.levels && data.levels.length > 0) {
+          const parsed = data.levels.map((lvl, index) => {
+            const h = lvl.height || parseInt(lvl.name) || 0;
+            return {
+              label: h ? `${h}p` : lvl.name || `Q${index + 1}`,
+              levelIndex: index,
+              height: h,
+            };
+          });
+
+          // Sort descending by height
+          parsed.sort((a, b) => (b.height || 0) - (a.height || 0));
+          setQualities([{ label: "Auto", levelIndex: -1 }, ...parsed]);
+        }
+      });
+
       hls.loadSource(proxiedHls);
       hls.attachMedia(video);
       return () => {
         hls.destroy();
+        hlsRef.current = null;
       };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = proxiedHls;
       video.load();
+      setQualities([
+        { label: "Auto", levelIndex: -1 },
+        { label: "720p", levelIndex: 720, height: 720 },
+        { label: "480p", levelIndex: 480, height: 480 },
+      ]);
     } else {
       video.src = streamUrl;
       video.load();
     }
   }, [streamUrl, isDirectMp4]);
+
+  const handleQualityChange = (levelIndex: number) => {
+    setCurrentQualityIndex(levelIndex);
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = levelIndex;
+    }
+  };
 
   const handleSeek = (deltaSeconds: number) => {
     const video = videoRef.current;
@@ -260,7 +356,7 @@ function LecturePlayerView({
     <div className="space-y-6">
       {/* Video Streaming Area */}
       {streamUrl ? (
-        <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white border border-sky-100 shadow-md shadow-sky-100/50">
+        <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white border border-sky-100 shadow-md shadow-sky-100/50 rounded-2xl">
           <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 shadow-lg">
             <video
               ref={videoRef}
@@ -276,19 +372,19 @@ function LecturePlayerView({
             />
           </div>
 
-          {/* Quick Controls & Stream Metadata Strip */}
+          {/* Quick Controls, Speed & Multiple Quality Selectors */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">
                 <Zap className="h-3 w-3 fill-current text-sky-500" />
-                {isDirectMp4 ? "Ultra-Fast MP4 Stream" : "High-Definition Stream"}
+                {isDirectMp4 ? "Ultra-Fast Stream" : "High-Definition Stream"}
               </span>
               {duration && (
                 <span className="text-slate-500 font-medium">· Duration: {duration}</span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Skip backward 10s */}
               <button
                 type="button"
@@ -311,69 +407,89 @@ function LecturePlayerView({
                 <span>10s</span>
               </button>
 
-              <span className="text-slate-400 text-[11px] ml-1 font-medium">Speed:</span>
-              {[0.75, 1, 1.25, 1.5, 2].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setPlaybackSpeed(s);
-                    if (videoRef.current) videoRef.current.playbackRate = s;
-                  }}
-                  className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
-                    playbackSpeed === s
-                      ? "bg-sky-600 text-white shadow-xs"
-                      : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
-                  }`}
-                >
-                  {s}x
-                </button>
-              ))}
+              {/* Playback Speed Selectors */}
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 text-[11px] font-medium mr-0.5">Speed:</span>
+                {[0.75, 1, 1.25, 1.5, 2].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setPlaybackSpeed(s);
+                      if (videoRef.current) videoRef.current.playbackRate = s;
+                    }}
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                      playbackSpeed === s
+                        ? "bg-sky-600 text-white shadow-xs"
+                        : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                    }`}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
 
-              {isDirectMp4 && (
-                <a
-                  href={streamUrl}
-                  download={`${title}.mp4`}
-                  className="ml-1 inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100"
-                  title="Download MP4 Video directly"
-                >
-                  <Download className="h-3 w-3" />
-                  <span>Download MP4</span>
-                </a>
-              )}
-
-              {streamUrl && (
-                <a
-                  href={streamUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-1 inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700 transition hover:bg-sky-100 hover:border-sky-300"
-                  title="Open video in new tab"
-                >
-                  <ExternalLink className="h-3 w-3 text-sky-600" />
-                  <span>Open in New Tab</span>
-                </a>
-              )}
+              {/* Multiple Quality Playback Selectors */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1 mr-0.5">
+                  <Sliders className="h-3 w-3 text-sky-600" />
+                  <span>Quality:</span>
+                </span>
+                {qualities.length > 0
+                  ? qualities.map((q) => (
+                      <button
+                        key={q.levelIndex}
+                        type="button"
+                        onClick={() => handleQualityChange(q.levelIndex)}
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                          currentQualityIndex === q.levelIndex
+                            ? "bg-sky-600 text-white shadow-xs"
+                            : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    ))
+                  : [
+                      { label: "Auto", idx: -1 },
+                      { label: "720p", idx: 720 },
+                      { label: "480p", idx: 480 },
+                      { label: "360p", idx: 360 },
+                    ].map((q) => (
+                      <button
+                        key={q.label}
+                        type="button"
+                        onClick={() => setCurrentQualityIndex(q.idx)}
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                          currentQualityIndex === q.idx
+                            ? "bg-sky-600 text-white shadow-xs"
+                            : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        /* Video not yet released or audio/live scheduled */
-        <div className="card-surface p-10 text-center border-sky-100 bg-white">
+        /* While loading/resolving, shows Loading lecture */
+        <div className="card-surface p-12 text-center border border-sky-100 bg-white rounded-2xl shadow-sm">
           <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-sky-50 text-sky-600 border border-sky-100">
-            <Video className="h-6 w-6" />
+            <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
           </div>
-          <h2 className="text-base font-bold text-slate-900">Lecture Scheduled</h2>
+          <h2 className="text-base font-bold text-slate-900">Loading lecture…</h2>
           <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
             {item.startTime
-              ? `Scheduled for ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
-              : "This lecture stream will be ready once the session is processed."}
+              ? `Session scheduled for ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Video stream will be available soon.`
+              : "Connecting to video stream server, please wait…"}
           </p>
         </div>
       )}
 
       {/* Title & Chapter Details */}
-      <div className="card-surface p-5 sm:p-6 bg-white border-sky-100 shadow-sm">
+      <div className="card-surface p-5 sm:p-6 bg-white border border-sky-100 shadow-sm rounded-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
@@ -393,18 +509,6 @@ function LecturePlayerView({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-            {streamUrl && (
-              <a
-                href={streamUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/70 px-3.5 py-1.5 text-xs font-bold text-sky-700 transition hover:bg-sky-100 hover:border-sky-300"
-                title="Open video in new tab"
-              >
-                <ExternalLink className="h-3.5 w-3.5 text-sky-600" />
-                <span>Open Video in New Tab</span>
-              </a>
-            )}
             <Link
               to="/batches/$batchId/subject/$subjectId/topic/$topicId"
               params={{ batchId, subjectId, topicId }}
@@ -418,20 +522,17 @@ function LecturePlayerView({
         </div>
       </div>
 
-      {/* Attachments Section (Notes, DPPs) */}
+      {/* Attachments Section (Notes, DPPs) - In-app viewer only, no download, no new tab */}
       {files.length > 0 && (
-        <div className="card-surface p-5 sm:p-6 bg-white border-sky-100 shadow-sm">
+        <div className="card-surface p-5 sm:p-6 bg-white border border-sky-100 shadow-sm rounded-2xl">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-sm mb-4">
             <FileText className="h-4 w-4 text-sky-600" />
             <span>Lecture Notes & Attached PDFs ({files.length})</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {files.map((file, i) => (
-              <a
+              <div
                 key={`${file.url}-${i}`}
-                href={file.url}
-                target="_blank"
-                rel="noreferrer"
                 className="flex items-center justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/30 p-3.5 transition hover:border-sky-300 hover:bg-white hover:shadow-sm"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -443,11 +544,15 @@ function LecturePlayerView({
                     <span className="text-[10px] text-slate-400 font-medium">PDF Document</span>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-sky-700">
-                  <Download className="h-3 w-3" />
-                  <span>Download</span>
-                </span>
-              </a>
+                <button
+                  type="button"
+                  onClick={() => onPreviewPdf(file)}
+                  className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-sky-700 cursor-pointer"
+                >
+                  <Eye className="h-3 w-3" />
+                  <span>View PDF</span>
+                </button>
+              </div>
             ))}
           </div>
         </div>

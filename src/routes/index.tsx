@@ -12,13 +12,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Browse study batches, stream video lectures, and download chapter notes and DPPs instantly.",
+          "Browse study batches, stream video lectures, and access chapter notes and DPPs instantly.",
       },
       { property: "og:title", content: "Study Ace — Premium Batches, Lectures & Study Material" },
       {
         property: "og:description",
         content:
-          "Browse study batches, stream video lectures, and download chapter notes and DPPs instantly.",
+          "Browse study batches, stream video lectures, and access chapter notes and DPPs instantly.",
       },
     ],
   }),

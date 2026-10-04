@@ -14,7 +14,6 @@ import {
   Terminal,
   RefreshCw,
   Eye,
-  Download,
 } from "lucide-react";
 import {
   fetchTopicContent,
@@ -46,12 +45,12 @@ export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/topic
       { title: "Chapter Content — Study Ace" },
       {
         name: "description",
-        content: "Watch lectures, download chapter notes, and access DPPs on Study Ace.",
+        content: "Watch lectures, view chapter notes, and access DPPs on Study Ace.",
       },
       { property: "og:title", content: "Chapter Content — Study Ace" },
       {
         property: "og:description",
-        content: "Watch lectures, download chapter notes, and access DPPs on Study Ace.",
+        content: "Watch lectures, view chapter notes, and access DPPs on Study Ace.",
       },
     ],
   }),
@@ -212,27 +211,6 @@ function TopicPage() {
                 Streamed via secure same-origin proxy
               </p>
             </div>
-            {previewPdf && (
-              <div className="flex items-center gap-2 pr-6">
-                <a
-                  href={previewPdf.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:bg-surface-2"
-                >
-                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                  <span>Open Tab</span>
-                </a>
-                <a
-                  href={previewPdf.url}
-                  download={previewPdf.name}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>Download</span>
-                </a>
-              </div>
-            )}
           </DialogHeader>
           <div className="flex-1 w-full h-full min-h-0 bg-surface-2 rounded-lg overflow-hidden border border-border">
             {previewPdf && (
@@ -559,24 +537,6 @@ function DocRow({
                           <span>{f.name.toLowerCase().endsWith(".pdf") ? "Open PDF" : f.name}</span>
                         </button>
                       )}
-                      <a
-                        href={f.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                        title="Open in new tab"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">New Tab</span>
-                      </a>
-                      <a
-                        href={f.url}
-                        download={f.name}
-                        className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                        title="Download PDF"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </a>
                     </div>
                   ))}
                 </div>
@@ -625,24 +585,6 @@ function DocRow({
                   <span>{f.name.toLowerCase().endsWith(".pdf") ? "Open PDF" : f.name}</span>
                 </button>
               )}
-              <a
-                href={f.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                title="Open in new tab"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">New Tab</span>
-              </a>
-              <a
-                href={f.url}
-                download={f.name}
-                className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                title="Download PDF"
-              >
-                <Download className="h-3.5 w-3.5" />
-              </a>
             </div>
           ))}
         </div>
