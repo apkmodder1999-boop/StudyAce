@@ -1,0 +1,2 @@
+# Cloudflare Pages / Workers local environment variables (copy to .dev.vars for `wrangler pages dev`)
+PW_TOKEN=
