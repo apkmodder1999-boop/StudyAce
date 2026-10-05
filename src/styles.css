@@ -37,7 +37,7 @@
 
 :root {
   --radius: 0.875rem;
-  /* White & Ultra-Lite Sky Blue Palette */
+  /* Light Theme */
   --background: #ffffff;
   --foreground: #0f172a;
   --surface: #f8fbff;
@@ -72,13 +72,49 @@
     0 10px 28px -10px rgba(14, 165, 233, 0.25);
 }
 
+.dark {
+  /* Dark Theme */
+  --background: #090d16;
+  --foreground: #f8fafc;
+  --surface: #0f172a;
+  --surface-2: #1e293b;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #38bdf8;
+  --primary-foreground: #082f49;
+  --secondary: #1e293b;
+  --secondary-foreground: #7dd3fc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #38bdf8;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #10b981;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #38bdf8;
+  --gradient-hero: radial-gradient(
+    1400px 560px at 50% -40px,
+    #0c1a2e 0%,
+    #090d16 55%,
+    #050811 100%
+  );
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-glow:
+    0 0 0 1px rgba(56, 189, 248, 0.3),
+    0 10px 28px -10px rgba(56, 189, 248, 0.3);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
   }
 
   body {
-    background-color: #ffffff;
+    background-color: var(--color-background);
     color: var(--color-foreground);
     background-image: var(--gradient-hero);
     background-repeat: no-repeat;
@@ -95,8 +131,8 @@
 }
 
 @utility card-surface {
-  background-color: #ffffff;
-  border: 1px solid rgba(224, 242, 254, 0.85);
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
 }

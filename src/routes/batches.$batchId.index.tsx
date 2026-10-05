@@ -82,12 +82,12 @@ function BatchPage() {
 
             {allSubjects.length > 3 && (
               <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <input
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder="Filter subjects…"
-                  className="w-full rounded-xl border border-sky-100 bg-white py-2 pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 shadow-xs focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  className="w-full rounded-xl border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs focus:border-sky-300 dark:focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-950"
                 />
               </div>
             )}
@@ -112,7 +112,7 @@ function BatchPage() {
                   key={s._id}
                   to="/batches/$batchId/subject/$subjectId"
                   params={{ batchId, subjectId: s._id }}
-                  className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-white transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md hover:shadow-sky-100"
+                  className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none"
                 >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
                     {img ? (
@@ -120,33 +120,33 @@ function BatchPage() {
                         src={img}
                         alt={s.subject}
                         loading="lazy"
-                        className="h-13 w-13 rounded-xl object-cover bg-sky-50 flex-none border border-sky-100"
+                        className="h-13 w-13 rounded-xl object-cover bg-sky-50 dark:bg-slate-800 flex-none border border-sky-100 dark:border-slate-800"
                       />
                     ) : (
-                      <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 border border-sky-100 text-sky-700 font-bold text-base">
+                      <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 border border-sky-100 dark:border-slate-800 text-sky-700 dark:text-sky-400 font-bold text-base">
                         {s.subject?.[0] ?? "S"}
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-sky-600 transition">
+                      <h2 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
                         {s.subject}
                       </h2>
                       {teacherName && (
-                        <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500 font-medium">
-                          <User className="h-3 w-3 text-slate-400 flex-none" />
+                        <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          <User className="h-3 w-3 text-slate-400 dark:text-slate-500 flex-none" />
                           <span className="truncate">{teacherName}</span>
                         </p>
                       )}
                       {!teacherName && (
-                        <p className="mt-1 text-[11px] text-sky-600 font-medium">
+                        <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400 font-medium">
                           Tap to view chapters
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition group-hover:bg-sky-600 group-hover:text-white">
+                  <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 transition group-hover:bg-sky-600 group-hover:text-white">
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 </Link>

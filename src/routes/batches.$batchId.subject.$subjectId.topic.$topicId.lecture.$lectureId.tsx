@@ -2,18 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import {
-  Loader2,
-  FileText,
-  ArrowLeft,
-  Zap,
-  RotateCcw,
-  RotateCw,
-  Video,
-  Sliders,
-  Eye,
-  X,
-} from "lucide-react";
+import { Loader2, FileText, ArrowLeft, Zap, RotateCcw, RotateCw, Sliders, Eye } from "lucide-react";
 import {
   API_BASE,
   fetchContent,
@@ -159,10 +148,10 @@ function LecturePage() {
       />
 
       {isOverallLoading && (
-        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-white border border-sky-100 p-8 text-center rounded-2xl shadow-sm">
-          <Loader2 className="h-9 w-9 animate-spin text-sky-600" />
-          <p className="text-sm font-bold text-slate-800">Loading lecture…</p>
-          <p className="text-xs text-slate-400 font-medium">
+        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 p-8 text-center rounded-2xl shadow-sm">
+          <Loader2 className="h-9 w-9 animate-spin text-sky-600 dark:text-sky-400" />
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Loading lecture…</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
             Please wait while the video stream is initialized
           </p>
         </div>
@@ -182,18 +171,18 @@ function LecturePage() {
         />
       )}
 
-      {/* In-App PDF Preview Dialog (No download, no new tab) */}
+      {/* In-App PDF Preview Dialog */}
       <Dialog open={Boolean(previewPdf)} onOpenChange={(open) => !open && setPreviewPdf(null)}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 bg-white">
-          <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-border">
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-border dark:border-slate-800">
             <div>
-              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 truncate">
+              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 truncate">
                 {previewPdf?.name}
               </DialogTitle>
               <p className="text-[11px] text-muted-foreground mt-0.5">In-app document viewer</p>
             </div>
           </DialogHeader>
-          <div className="flex-1 w-full h-full min-h-0 bg-slate-50 rounded-lg overflow-hidden border border-border">
+          <div className="flex-1 w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950 rounded-lg overflow-hidden border border-border dark:border-slate-800">
             {previewPdf && (
               <iframe
                 src={previewPdf.url}
@@ -214,7 +203,7 @@ function LecturePlayerView({
   batchId,
   subjectId,
   topicId,
-  lectureId,
+  lectureId: _lectureId,
   onPreviewPdf,
 }: {
   item: ContentItem;
@@ -352,7 +341,7 @@ function LecturePlayerView({
     <div className="space-y-6">
       {/* Video Streaming Area */}
       {streamUrl ? (
-        <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white border border-sky-100 shadow-md shadow-sky-100/50 rounded-2xl">
+        <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-md shadow-sky-100/50 dark:shadow-none rounded-2xl">
           <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 shadow-lg">
             <video
               ref={videoRef}
@@ -371,12 +360,14 @@ function LecturePlayerView({
           {/* Quick Controls, Speed & Multiple Quality Selectors */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300">
                 <Zap className="h-3 w-3 fill-current text-sky-500" />
                 {isDirectMp4 ? "Ultra-Fast Stream" : "High-Definition Stream"}
               </span>
               {duration && (
-                <span className="text-slate-500 font-medium">· Duration: {duration}</span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  · Duration: {duration}
+                </span>
               )}
             </div>
 
@@ -385,7 +376,7 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => handleSeek(-10)}
-                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50/70 px-2.5 py-1 text-[11px] font-semibold text-sky-800 transition hover:bg-sky-100"
+                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 dark:border-slate-800 bg-sky-50/70 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300 transition hover:bg-sky-100 dark:hover:bg-slate-700 cursor-pointer"
                 title="Rewind 10 seconds"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -396,7 +387,7 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => handleSeek(10)}
-                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50/70 px-2.5 py-1 text-[11px] font-semibold text-sky-800 transition hover:bg-sky-100"
+                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 dark:border-slate-800 bg-sky-50/70 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300 transition hover:bg-sky-100 dark:hover:bg-slate-700 cursor-pointer"
                 title="Forward 10 seconds"
               >
                 <RotateCw className="h-3 w-3" />
@@ -405,7 +396,9 @@ function LecturePlayerView({
 
               {/* Playback Speed Selectors */}
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 text-[11px] font-medium mr-0.5">Speed:</span>
+                <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium mr-0.5">
+                  Speed:
+                </span>
                 {[0.75, 1, 1.25, 1.5, 2].map((s) => (
                   <button
                     key={s}
@@ -414,10 +407,10 @@ function LecturePlayerView({
                       setPlaybackSpeed(s);
                       if (videoRef.current) videoRef.current.playbackRate = s;
                     }}
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
                       playbackSpeed === s
                         ? "bg-sky-600 text-white shadow-xs"
-                        : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                        : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
                     }`}
                   >
                     {s}x
@@ -427,8 +420,8 @@ function LecturePlayerView({
 
               {/* Multiple Quality Playback Selectors */}
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-slate-400 text-[11px] font-medium flex items-center gap-1 mr-0.5">
-                  <Sliders className="h-3 w-3 text-sky-600" />
+                <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium flex items-center gap-1 mr-0.5">
+                  <Sliders className="h-3 w-3 text-sky-600 dark:text-sky-400" />
                   <span>Quality:</span>
                 </span>
                 {qualities.length > 0
@@ -437,10 +430,10 @@ function LecturePlayerView({
                         key={q.levelIndex}
                         type="button"
                         onClick={() => handleQualityChange(q.levelIndex)}
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
                           currentQualityIndex === q.levelIndex
                             ? "bg-sky-600 text-white shadow-xs"
-                            : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                            : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
                         }`}
                       >
                         {q.label}
@@ -456,10 +449,10 @@ function LecturePlayerView({
                         key={q.label}
                         type="button"
                         onClick={() => setCurrentQualityIndex(q.idx)}
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition ${
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
                           currentQualityIndex === q.idx
                             ? "bg-sky-600 text-white shadow-xs"
-                            : "border border-sky-100 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-700"
+                            : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
                         }`}
                       >
                         {q.label}
@@ -471,12 +464,14 @@ function LecturePlayerView({
         </div>
       ) : (
         /* While loading/resolving, shows Loading lecture */
-        <div className="card-surface p-12 text-center border border-sky-100 bg-white rounded-2xl shadow-sm">
-          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-sky-50 text-sky-600 border border-sky-100">
-            <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
+        <div className="card-surface p-12 text-center border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-700">
+            <Loader2 className="h-6 w-6 animate-spin text-sky-600 dark:text-sky-400" />
           </div>
-          <h2 className="text-base font-bold text-slate-900">Loading lecture…</h2>
-          <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            Loading lecture…
+          </h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             {item.startTime
               ? `Session scheduled for ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Video stream will be available soon.`
               : "Connecting to video stream server, please wait…"}
@@ -485,19 +480,19 @@ function LecturePlayerView({
       )}
 
       {/* Title & Chapter Details */}
-      <div className="card-surface p-5 sm:p-6 bg-white border border-sky-100 shadow-sm rounded-2xl">
+      <div className="card-surface p-5 sm:p-6 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm rounded-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+            <h1 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
               {title}
             </h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
               {duration && <span>{duration}</span>}
               {item.startTime && (
                 <span>· Scheduled: {new Date(item.startTime).toLocaleDateString()}</span>
               )}
               {item.status && (
-                <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-100">
+                <span className="rounded bg-sky-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-slate-700">
                   {item.status}
                 </span>
               )}
@@ -509,35 +504,39 @@ function LecturePlayerView({
               to="/batches/$batchId/subject/$subjectId/topic/$topicId"
               params={{ batchId, subjectId, topicId }}
               search={{ name: undefined, slug: undefined }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
-              <ArrowLeft className="h-3.5 w-3.5 text-sky-600" />
+              <ArrowLeft className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
               <span>Back to Chapter</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Attachments Section (Notes, DPPs) - In-app viewer only, no download, no new tab */}
+      {/* Attachments Section (Notes, DPPs) - In-app viewer only */}
       {files.length > 0 && (
-        <div className="card-surface p-5 sm:p-6 bg-white border border-sky-100 shadow-sm rounded-2xl">
-          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm mb-4">
-            <FileText className="h-4 w-4 text-sky-600" />
+        <div className="card-surface p-5 sm:p-6 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm rounded-2xl">
+          <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold text-sm mb-4">
+            <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             <span>Lecture Notes & Attached PDFs ({files.length})</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {files.map((file, i) => (
               <div
                 key={`${file.url}-${i}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/30 p-3.5 transition hover:border-sky-300 hover:bg-white hover:shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-xl border border-sky-100 dark:border-slate-800 bg-sky-50/30 dark:bg-slate-800/40 p-3.5 transition hover:border-sky-300 dark:hover:border-sky-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-sky-100 text-sky-700">
+                  <div className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-slate-800">{file.name}</p>
-                    <span className="text-[10px] text-slate-400 font-medium">PDF Document</span>
+                    <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {file.name}
+                    </p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                      PDF Document
+                    </span>
                   </div>
                 </div>
                 <button

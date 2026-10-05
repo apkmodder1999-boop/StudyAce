@@ -81,12 +81,12 @@ function BatchesPage() {
 
       {/* Polished Search Bar with Sky Accent */}
       <div className="relative mb-6">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search batches by name, class, faculty…"
-          className="w-full rounded-2xl border border-sky-100 bg-white py-3.5 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-400 shadow-sm transition hover:border-sky-200 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100"
+          className="w-full rounded-2xl border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 pl-11 pr-4 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition hover:border-sky-200 dark:hover:border-slate-700 focus:border-sky-400 dark:focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-950/50"
         />
       </div>
 
@@ -95,10 +95,14 @@ function BatchesPage() {
       {!isLoading && !error && filtered.length === 0 && <EmptyBox message="No batches found." />}
 
       {!isLoading && !error && filtered.length > 0 && (
-        <div className="mb-4 flex items-center justify-between text-xs text-slate-500">
+        <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <span>
-            Showing <strong className="font-semibold text-slate-800">{batches.length}</strong> of{" "}
-            <strong className="font-semibold text-slate-800">
+            Showing{" "}
+            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+              {batches.length}
+            </strong>{" "}
+            of{" "}
+            <strong className="font-semibold text-slate-800 dark:text-slate-200">
               {filtered.length.toLocaleString("en-IN")}
             </strong>{" "}
             batches
@@ -113,11 +117,11 @@ function BatchesPage() {
             key={b._id}
             to="/batches/$batchId"
             params={{ batchId: b._id }}
-            className="group card-surface flex flex-col justify-between overflow-hidden bg-white transition duration-200 hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md hover:shadow-sky-100"
+            className="group card-surface flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition duration-200 hover:-translate-y-0.5 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none"
           >
             <div>
               {b.previewImage ? (
-                <div className="relative h-44 w-full overflow-hidden bg-sky-50">
+                <div className="relative h-44 w-full overflow-hidden bg-sky-50 dark:bg-slate-800">
                   <img
                     src={b.previewImage}
                     alt={`${b.name} batch cover`}
@@ -125,47 +129,47 @@ function BatchesPage() {
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-102"
                   />
                   {b.status && (
-                    <div className="absolute right-3 top-3 rounded-md bg-white/90 px-2 py-0.5 text-[11px] font-bold text-sky-700 shadow-sm backdrop-blur-xs">
+                    <div className="absolute right-3 top-3 rounded-md bg-white/90 dark:bg-slate-900/90 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 shadow-sm backdrop-blur-xs">
                       {b.status}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="h-44 w-full bg-gradient-to-br from-sky-50 to-sky-100 flex items-center justify-center text-sky-600 font-bold text-xl">
+                <div className="h-44 w-full bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-sky-600 dark:text-sky-400 font-bold text-xl">
                   {b.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
 
               <div className="p-5">
                 {/* Clean unboxed metadata per Frontend Design Constitution */}
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+                <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                   <span>{b.language ?? "Hinglish"}</span>
                   {b.class && (
                     <>
-                      <span className="text-slate-300">·</span>
+                      <span className="text-slate-300 dark:text-slate-700">·</span>
                       <span>Class {b.class}</span>
                     </>
                   )}
                   {b.type && !b.class && (
                     <>
-                      <span className="text-slate-300">·</span>
+                      <span className="text-slate-300 dark:text-slate-700">·</span>
                       <span>{(b.type ?? "").replace("_", " ")}</span>
                     </>
                   )}
                 </div>
 
-                <h2 className="text-base font-bold text-slate-900 group-hover:text-sky-600 transition leading-snug">
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition leading-snug">
                   {b.name}
                 </h2>
 
                 {b.byName && (
-                  <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 leading-relaxed">
+                  <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     {b.byName}
                   </p>
                 )}
 
                 {(b.startDate || b.endDate) && (
-                  <p className="mt-3 text-xs text-slate-400 font-medium">
+                  <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 font-medium">
                     {b.startDate ? formatBatchDate(b.startDate) : ""}
                     {b.endDate ? ` → ${formatBatchDate(b.endDate)}` : ""}
                   </p>
@@ -173,17 +177,17 @@ function BatchesPage() {
               </div>
             </div>
 
-            <div className="border-t border-sky-100/80 bg-sky-50/30 px-5 py-3.5 flex items-center justify-between">
-              <span className="text-xs font-semibold text-emerald-600">
+            <div className="border-t border-sky-100/80 dark:border-slate-800/80 bg-sky-50/30 dark:bg-slate-850/50 px-5 py-3.5 flex items-center justify-between">
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 {b.feeTotal ? (
-                  <span className="text-slate-400 line-through mr-1 font-normal">
+                  <span className="text-slate-400 dark:text-slate-500 line-through mr-1 font-normal">
                     ₹{b.feeTotal?.toLocaleString("en-IN")}
                   </span>
                 ) : null}
                 FREE ACCESS
               </span>
 
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 group-hover:text-sky-700 transition">
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 transition">
                 <span>Explore Batch</span>
                 <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
               </span>
@@ -197,7 +201,7 @@ function BatchesPage() {
           <button
             type="button"
             onClick={() => setVisible((v) => v + PAGE)}
-            className="inline-flex items-center justify-center rounded-xl border border-sky-200 bg-white px-6 py-3 text-xs font-bold text-sky-700 shadow-sm transition hover:bg-sky-50 hover:border-sky-300"
+            className="inline-flex items-center justify-center rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-sm transition hover:bg-sky-50 dark:hover:bg-slate-800 hover:border-sky-300 dark:hover:border-slate-700 cursor-pointer"
           >
             Load More Batches
           </button>
