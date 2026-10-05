@@ -53,7 +53,6 @@ function LecturePage() {
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
     url: string;
-    proxyUrl: string;
   } | null>(null);
 
   // 1. Fetch item from content pages
@@ -124,12 +123,9 @@ function LecturePage() {
 
   const handlePreviewPdf = (att: Attachment) => {
     const rawUrl = att.url || att.download_url || att.fileUrl || "";
-    const cleanUrl = rawUrl.replace("https://a.pimaxer.in", API_BASE);
-    const proxyUrl = `/api/public/pw/pdf?url=${encodeURIComponent(cleanUrl)}`;
     setPreviewPdf({
       name: att.name || "Lecture Document.pdf",
-      url: cleanUrl,
-      proxyUrl,
+      url: rawUrl,
     });
   };
 
@@ -200,7 +196,7 @@ function LecturePage() {
           <div className="flex-1 w-full h-full min-h-0 bg-slate-50 rounded-lg overflow-hidden border border-border">
             {previewPdf && (
               <iframe
-                src={previewPdf.proxyUrl || previewPdf.url}
+                src={previewPdf.url}
                 className="w-full h-full border-0"
                 title={previewPdf.name}
               />

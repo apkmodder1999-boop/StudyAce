@@ -73,7 +73,6 @@ function TopicPage() {
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
     url: string;
-    proxyUrl: string;
   } | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -207,15 +206,13 @@ function TopicPage() {
               <DialogTitle className="text-sm sm:text-base font-semibold truncate">
                 {previewPdf?.name ?? "PDF Document"}
               </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Streamed via secure same-origin proxy
-              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">In-app document viewer</p>
             </div>
           </DialogHeader>
           <div className="flex-1 w-full h-full min-h-0 bg-surface-2 rounded-lg overflow-hidden border border-border">
             {previewPdf && (
               <iframe
-                src={previewPdf.proxyUrl || previewPdf.url}
+                src={previewPdf.url}
                 className="w-full h-full border-0"
                 title={previewPdf.name}
               />
@@ -314,7 +311,7 @@ function TestCard({
   batchId: string;
   subjectId: string;
   topicId: string;
-  onPreviewPdf?: (pdf: { name: string; url: string; proxyUrl: string }) => void;
+  onPreviewPdf?: (pdf: { name: string; url: string }) => void;
 }) {
   const title = item.name ?? item.topic ?? "Online Test";
   const files = itemAttachments(item);
@@ -462,7 +459,7 @@ function DocRow({
   onPreviewPdf,
 }: {
   item: ContentItem;
-  onPreviewPdf?: (pdf: { name: string; url: string; proxyUrl: string }) => void;
+  onPreviewPdf?: (pdf: { name: string; url: string }) => void;
 }) {
   // If this item contains an array of individual homework books / PDFs
   const homeworks =
@@ -473,14 +470,13 @@ function DocRow({
     return (
       <div className="space-y-3">
         {homeworks.map((hw, idx) => {
-          const hwFiles: { name: string; url: string; proxyUrl: string }[] = [];
+          const hwFiles: { name: string; url: string }[] = [];
           for (const a of hw.attachmentIds ?? []) {
             const url = attachmentUrl(a);
             if (url) {
               hwFiles.push({
                 name: a.name ?? hw.topic ?? "Document",
                 url,
-                proxyUrl: attachmentProxyUrl(url),
               });
             }
           }
@@ -497,7 +493,6 @@ function DocRow({
             hwFiles.push({
               name: hw.topic ?? "Document",
               url: directHwUrl,
-              proxyUrl: attachmentProxyUrl(directHwUrl),
             });
           }
 
