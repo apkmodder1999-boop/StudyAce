@@ -401,7 +401,13 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
     }>(`${API_BASE}/v1/videos/${videoId}`);
 
     if (json?.data && (json.data.videoUrl || json.data._id || json.data.id)) {
-      return json.data;
+      const vid: VideoDetails = { ...json.data };
+      if (vid.videoUrl) {
+        // Upstream returns https://a.pimaxer.in/stream/... which is served by Heroku proxy:
+        // https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/{uuid}/video.mp4
+        vid.videoUrl = vid.videoUrl.replace("https://a.pimaxer.in", API_BASE);
+      }
+      return vid;
     }
   } catch {
     // endpoint returned 404 or video not ready
@@ -451,9 +457,10 @@ export async function resolvePlayback(
 
   // 3. Direct URL fallback
   if (directUrl && /^https?:\/\//i.test(directUrl)) {
+    const cleanUrl = directUrl.replace("https://a.pimaxer.in", API_BASE);
     return {
-      src: directUrl,
-      isDirectMp4: directUrl.endsWith(".mp4") || directUrl.includes("/stream/"),
+      src: cleanUrl,
+      isDirectMp4: cleanUrl.endsWith(".mp4") || cleanUrl.includes("/stream/"),
     };
   }
 
