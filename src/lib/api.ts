@@ -190,7 +190,6 @@ export async function fetchBatches(): Promise<Batch[]> {
 }
 
 async function fetchBatchesFromNetwork(): Promise<Batch[]> {
-  // 1. Direct API call to Heroku API
   try {
     const json = await getJSON<{
       success?: boolean;
@@ -228,47 +227,18 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
         return list;
       }
     }
-  } catch {
-    // Try secondary mirror
-  }
-
-  // 2. Direct static backup from GitHub Pages
-  try {
-    const backupJson = await getJSON<{
-      success?: boolean;
-      batches?: Record<string, unknown>[];
-    }>("https://rarestudy.github.io/rarestudy/batches.json");
-
-    const rawBatches = backupJson.batches;
-    if (Array.isArray(rawBatches) && rawBatches.length > 0) {
-      const list: Batch[] = rawBatches.map((b) => ({
-        _id: String(b["_id"] || b["batch_id"] || b["id"]),
-        name: String(b["name"] || "Untitled Batch"),
-        class: typeof b["class"] === "string" ? b["class"] : undefined,
-        slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
-        byName: String(b["byName"] || b["cohort"] || ""),
-        startDate: typeof b["startDate"] === "string" ? b["startDate"] : undefined,
-        endDate: typeof b["endDate"] === "string" ? b["endDate"] : undefined,
-        language: String(b["language"] || "Hinglish"),
-        previewImage: getBatchImageUrl(b["previewImage"]),
-        feeTotal: typeof b["feeTotal"] === "number" ? b["feeTotal"] : undefined,
-        type: String(b["type"] || ""),
-        status: typeof b["status"] === "string" ? b["status"] : undefined,
-        price: typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
-      }));
-
-      memoryBatchesCache = list;
-      return list;
+  } catch (err) {
+    if (memoryBatchesCache && memoryBatchesCache.length > 0) {
+      return memoryBatchesCache;
     }
-  } catch {
-    // ignore
+    throw err;
   }
 
   if (memoryBatchesCache && memoryBatchesCache.length > 0) {
     return memoryBatchesCache;
   }
 
-  throw new Error("Could not load batches list. Please verify your internet connection.");
+  throw new Error("Could not load batches list from API. Please verify your internet connection.");
 }
 
 /**
@@ -405,7 +375,10 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
       if (vid.videoUrl) {
         // Upstream returns https://a.pimaxer.in/stream/... which is served by Heroku proxy:
         // https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/{uuid}/video.mp4
-        vid.videoUrl = vid.videoUrl.replace("https://a.pimaxer.in", API_BASE);
+        vid.videoUrl = vid.videoUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE);
+        if (vid.videoUrl.startsWith("/stream/")) {
+          vid.videoUrl = `${API_BASE}${vid.videoUrl}`;
+        }
       }
       return vid;
     }
@@ -457,7 +430,10 @@ export async function resolvePlayback(
 
   // 3. Direct URL fallback
   if (directUrl && /^https?:\/\//i.test(directUrl)) {
-    const cleanUrl = directUrl.replace("https://a.pimaxer.in", API_BASE);
+    let cleanUrl = directUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE);
+    if (cleanUrl.startsWith("/stream/")) {
+      cleanUrl = `${API_BASE}${cleanUrl}`;
+    }
     return {
       src: cleanUrl,
       isDirectMp4: cleanUrl.endsWith(".mp4") || cleanUrl.includes("/stream/"),

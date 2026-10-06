@@ -8,7 +8,7 @@ Base API — `https://api.pimaxer.in/v2`
 
 |---|---|
 
-| Batches list | `https://rarestudy.github.io/rarestudy/batches.json` (static JSON, not pimaxer) |
+| Batches list | `GET /v1/batches?page=1&limit=200` (live public API) |
 
 | Batch details (subjects list) | `GET /v2/batches/{batchId}/details` |
 

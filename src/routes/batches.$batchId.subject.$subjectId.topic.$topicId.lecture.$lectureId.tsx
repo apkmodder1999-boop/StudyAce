@@ -58,7 +58,14 @@ function LecturePage() {
         fetchContent(batchId, subjectId, "Videos", undefined, 2),
       ]);
       const all = pages.flat();
-      return all.find((i) => i._id === lectureId) ?? null;
+      return (
+        all.find(
+          (i) =>
+            i._id === lectureId ||
+            i.videoDetails?._id === lectureId ||
+            i.videoDetails?.id === lectureId,
+        ) ?? null
+      );
     },
   });
 
@@ -241,12 +248,12 @@ function LecturePlayerView({
   const rawStreamUrl =
     videoData?.videoUrl ||
     (item.videoDetails?.videoUrl?.includes(".mp4")
-      ? item.videoDetails.videoUrl.replace("https://a.pimaxer.in", API_BASE)
+      ? item.videoDetails.videoUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE)
       : undefined) ||
     item.url;
 
   const streamUrl = rawStreamUrl
-    ? rawStreamUrl.replace("https://a.pimaxer.in", API_BASE)
+    ? rawStreamUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE)
     : undefined;
 
   const isDirectMp4 = Boolean(
