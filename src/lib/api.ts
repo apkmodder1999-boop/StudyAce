@@ -171,38 +171,10 @@ export function subjectImage(subject: Subject): string | undefined {
 }
 
 /**
- * Loads batches directly from the API.
+ * Loads batches directly from the API rawly without query parameters.
  * Endpoint: http://a.pimaxer.in/v1/batches
  */
 export async function fetchBatches(): Promise<Batch[]> {
-  if (memoryBatchesCache && memoryBatchesCache.length > 0) {
-    return memoryBatchesCache;
-  }
-
-  try {
-    const local = localStorage.getItem(BATCHES_CACHE_KEY);
-    if (local) {
-      const parsed = JSON.parse(local) as Batch[];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        memoryBatchesCache = parsed;
-        // Re-validate in background
-        fetchBatchesFromNetwork()
-          .then((fresh) => {
-            memoryBatchesCache = fresh;
-            try {
-              localStorage.setItem(BATCHES_CACHE_KEY, JSON.stringify(fresh));
-            } catch {
-              // ignore
-            }
-          })
-          .catch(() => {});
-        return parsed;
-      }
-    }
-  } catch {
-    // localStorage not accessible
-  }
-
   return fetchBatchesFromNetwork();
 }
 
@@ -212,7 +184,7 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
       success?: boolean;
       total?: number;
       data?: Record<string, unknown>[];
-    }>(`${API_BASE}/v1/batches?page=1&limit=200`);
+    }>(`${API_BASE}/v1/batches`);
 
     if (Array.isArray(json.data) && json.data.length > 0) {
       const list: Batch[] = json.data
@@ -236,11 +208,6 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
 
       if (list.length > 0) {
         memoryBatchesCache = list;
-        try {
-          localStorage.setItem(BATCHES_CACHE_KEY, JSON.stringify(list));
-        } catch {
-          // ignore
-        }
         return list;
       }
     }

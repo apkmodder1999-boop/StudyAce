@@ -25,8 +25,6 @@ export const Route = createFileRoute("/")({
   component: BatchesPage,
 });
 
-const PAGE = 24;
-
 function formatBatchDate(dateStr?: string): string {
   if (!dateStr) return "";
   try {
@@ -44,7 +42,6 @@ function formatBatchDate(dateStr?: string): string {
 function BatchesPage() {
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
-  const [visible, setVisible] = useState(PAGE);
   const { data, isLoading, error } = useQuery({
     queryKey: ["batches"],
     queryFn: fetchBatches,
@@ -54,19 +51,16 @@ function BatchesPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       setQuery(q);
-      setVisible(PAGE);
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
 
-  const filtered = useMemo(() => {
+  const batches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const all = data ?? [];
     if (!needle) return all;
     return all.filter((b) => (b.name + " " + (b.byName ?? "")).toLowerCase().includes(needle));
   }, [data, query]);
-
-  const batches = filtered.slice(0, visible);
 
   return (
     <Shell>
@@ -92,18 +86,14 @@ function BatchesPage() {
 
       {isLoading && <Loading text="Loading batches list…" />}
       {error && <ErrorBox message={(error as Error).message} />}
-      {!isLoading && !error && filtered.length === 0 && <EmptyBox message="No batches found." />}
+      {!isLoading && !error && batches.length === 0 && <EmptyBox message="No batches found." />}
 
-      {!isLoading && !error && filtered.length > 0 && (
+      {!isLoading && !error && batches.length > 0 && (
         <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <span>
             Showing{" "}
             <strong className="font-semibold text-slate-800 dark:text-slate-200">
               {batches.length}
-            </strong>{" "}
-            of{" "}
-            <strong className="font-semibold text-slate-800 dark:text-slate-200">
-              {filtered.length.toLocaleString("en-IN")}
             </strong>{" "}
             batches
           </span>
@@ -195,18 +185,6 @@ function BatchesPage() {
           </Link>
         ))}
       </div>
-
-      {visible < filtered.length && (
-        <div className="mt-8 text-center">
-          <button
-            type="button"
-            onClick={() => setVisible((v) => v + PAGE)}
-            className="inline-flex items-center justify-center rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-sm transition hover:bg-sky-50 dark:hover:bg-slate-800 hover:border-sky-300 dark:hover:border-slate-700 cursor-pointer"
-          >
-            Load More Batches
-          </button>
-        </div>
-      )}
     </Shell>
   );
 }
