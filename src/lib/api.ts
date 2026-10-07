@@ -1,4 +1,4 @@
-export const API_BASE = "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com";
+export const API_BASE = "http://a.pimaxer.in";
 
 export type Batch = {
   _id: string;
@@ -59,21 +59,26 @@ export type ContentItem = {
   url?: string | undefined;
   urlType?: string | undefined;
   status?: string | undefined;
-  date?: string | undefined;
   startTime?: string | undefined;
-  endTime?: string | undefined;
-  isDPPNotes?: boolean | undefined;
+  duration?: string | undefined;
+  totalQuestions?: number | undefined;
+  totalMarks?: number | undefined;
+  maxDuration?: number | undefined;
+  modeType?: string | undefined;
+  infoMessage?: string | undefined;
+  tag2?: string | undefined;
   isVideoLecture?: boolean | undefined;
-  tags?: { _id: string; name: string }[] | undefined;
+  attachments?: Attachment[] | undefined;
+  attachmentIds?: Attachment[] | undefined;
   videoDetails?:
     | {
         _id?: string | undefined;
         id?: string | undefined;
         name?: string | undefined;
         image?: string | undefined;
-        duration?: string | undefined;
         videoUrl?: string | undefined;
-        embedCode?: string | undefined;
+        duration?: string | undefined;
+        status?: string | undefined;
         types?: string[] | undefined;
       }
     | undefined;
@@ -83,53 +88,56 @@ export type ContentItem = {
         topic?: string | undefined;
         note?: string | undefined;
         attachmentIds?: Attachment[] | undefined;
+        url?: string | undefined;
+        download_url?: string | undefined;
+        fileUrl?: string | undefined;
       }[]
     | undefined;
-  attachmentIds?: Attachment[] | undefined;
 };
+
+export type ContentType = "Videos" | "notes" | "DppNotes" | "Test";
 
 export type VideoDetails = {
-  _id?: string | undefined;
-  id?: string | undefined;
-  name?: string | undefined;
-  image?: string | undefined;
-  videoUrl?: string | undefined;
-  duration?: string | undefined;
-  types?: string[] | undefined;
-  description?: string | undefined;
-  status?: string | undefined;
+  _id: string;
+  id?: string;
+  name?: string;
+  videoUrl?: string;
+  duration?: string;
+  status?: string;
+  image?: string;
+  types?: string[];
 };
 
-export const CONTENT_TYPES = ["Videos", "notes", "DppNotes", "Test"] as const;
-export type ContentType = (typeof CONTENT_TYPES)[number];
-
-const BATCHES_CACHE_KEY = "pw_batches_cached_list_v1";
+/** In-memory cache for fast responsive navigation */
 let memoryBatchesCache: Batch[] | null = null;
+const BATCHES_CACHE_KEY = "pw_batches_cache_v2";
 
-/** Direct fetch with timeout — no server proxy, directly visible in Network tab */
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit = {},
-  timeoutMs = 8000,
-): Promise<Response> {
+/** Safe Fetch Helper with Timeout */
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 12000) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       ...options,
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
     return res;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
+  } finally {
+    clearTimeout(id);
   }
 }
 
-/** Direct JSON getter with error handling */
+/** Direct JSON getter with error handling and secure HTTPS protocol normalization */
 async function getJSON<T>(url: string): Promise<T> {
-  const res = await fetchWithTimeout(url, {
+  let targetUrl = url;
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    targetUrl.startsWith("http://a.pimaxer.in")
+  ) {
+    targetUrl = targetUrl.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
+  }
+  const res = await fetchWithTimeout(targetUrl, {
     headers: {
       accept: "application/json",
     },
@@ -163,8 +171,8 @@ export function subjectImage(subject: Subject): string | undefined {
 }
 
 /**
- * Loads batches directly from the public API (visible in DevTools Network tab).
- * Endpoint: https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/v1/batches?page=1&limit=200
+ * Loads batches directly from the API.
+ * Endpoint: http://a.pimaxer.in/v1/batches
  */
 export async function fetchBatches(): Promise<Batch[]> {
   if (memoryBatchesCache && memoryBatchesCache.length > 0) {
@@ -178,7 +186,16 @@ export async function fetchBatches(): Promise<Batch[]> {
       if (Array.isArray(parsed) && parsed.length > 0) {
         memoryBatchesCache = parsed;
         // Re-validate in background
-        fetchBatchesFromNetwork().catch(() => {});
+        fetchBatchesFromNetwork()
+          .then((fresh) => {
+            memoryBatchesCache = fresh;
+            try {
+              localStorage.setItem(BATCHES_CACHE_KEY, JSON.stringify(fresh));
+            } catch {
+              // ignore
+            }
+          })
+          .catch(() => {});
         return parsed;
       }
     }
@@ -243,7 +260,7 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
 
 /**
  * Direct Batch Details Fetch
- * Endpoint: https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/v1/{batchId}/details
+ * Endpoint: http://a.pimaxer.in/v1/{batchId}/details
  */
 export async function fetchBatchDetails(batchId: string): Promise<{
   _id: string;
@@ -292,24 +309,40 @@ export async function fetchBatchDetails(batchId: string): Promise<{
         _id: string;
         name: string;
         subjects?: Subject[];
+        batchName?: string;
+        byName?: string;
+        description?: string;
+        startDate?: string;
+        endDate?: string;
+        previewImage?: unknown;
       };
     }>(`https://api.penpencil.co/v3/batches/${batchId}/details`);
 
     if (pwJson?.data) {
       return {
         _id: pwJson.data._id || batchId,
-        name: pwJson.data.name || "Batch",
+        name: pwJson.data.name || pwJson.data.batchName || "Batch",
         subjects: pwJson.data.subjects ?? [],
+        batchName: pwJson.data.batchName,
+        byName: pwJson.data.byName,
+        description: pwJson.data.description,
+        startDate: pwJson.data.startDate,
+        endDate: pwJson.data.endDate,
+        previewImage: pwJson.data.previewImage,
       };
     }
   }
 
-  throw new Error("Unable to fetch batch subjects.");
+  return {
+    _id: batchId,
+    name: "Batch",
+    subjects: [],
+  };
 }
 
 /**
  * Direct Topics Fetch
- * Endpoint: https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/v1/{batchId}/subject/{subjectId}/topics?page=1
+ * Endpoint: http://a.pimaxer.in/v1/{batchId}/subject/{subjectId}/topics?page=1
  */
 export async function fetchTopics(batchId: string, subjectId: string): Promise<Topic[]> {
   const json = await getJSON<{
@@ -321,8 +354,8 @@ export async function fetchTopics(batchId: string, subjectId: string): Promise<T
 }
 
 /**
- * Direct Content Fetch (Videos, notes, DPPs, tests)
- * Endpoint: https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/v1/{batchId}/subject/{subjectId}/contents?page=1&tag={topicId}&contentType={contentType}
+ * Direct Content Fetch
+ * Endpoint: http://a.pimaxer.in/v1/{batchId}/subject/{subjectId}/contents?page=1&tag={topicId}&contentType={contentType}
  */
 export async function fetchContent(
   batchId: string,
@@ -358,9 +391,26 @@ export async function fetchTopicContent(
   return fetchContent(batchId, subjectId, contentType, topicId, 1);
 }
 
+/** Normalizes stream URL for active page protocol */
+export function normalizeStreamUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  let res = url.trim();
+  if (res.startsWith("/stream/")) {
+    res = `${API_BASE}${res}`;
+  }
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    res.startsWith("http://a.pimaxer.in")
+  ) {
+    res = res.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
+  }
+  return res;
+}
+
 /**
  * Direct Video Stream & Metadata Query
- * Endpoint: https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/v1/videos/{videoId}
+ * Endpoint: http://a.pimaxer.in/v1/videos/{videoId}
  */
 export async function fetchVideoById(videoId: string): Promise<VideoDetails | null> {
   if (!videoId) return null;
@@ -373,12 +423,7 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
     if (json?.data && (json.data.videoUrl || json.data._id || json.data.id)) {
       const vid: VideoDetails = { ...json.data };
       if (vid.videoUrl) {
-        // Upstream returns https://a.pimaxer.in/stream/... which is served by Heroku proxy:
-        // https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/{uuid}/video.mp4
-        vid.videoUrl = vid.videoUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE);
-        if (vid.videoUrl.startsWith("/stream/")) {
-          vid.videoUrl = `${API_BASE}${vid.videoUrl}`;
-        }
+        vid.videoUrl = normalizeStreamUrl(vid.videoUrl);
       }
       return vid;
     }
@@ -430,10 +475,7 @@ export async function resolvePlayback(
 
   // 3. Direct URL fallback
   if (directUrl && /^https?:\/\//i.test(directUrl)) {
-    let cleanUrl = directUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE);
-    if (cleanUrl.startsWith("/stream/")) {
-      cleanUrl = `${API_BASE}${cleanUrl}`;
-    }
+    const cleanUrl = normalizeStreamUrl(directUrl) || directUrl;
     return {
       src: cleanUrl,
       isDirectMp4: cleanUrl.endsWith(".mp4") || cleanUrl.includes("/stream/"),
@@ -456,26 +498,22 @@ export function proxyStream(url: string): string {
   return url;
 }
 
-/** Direct attachment passthrough (no proxy) */
-export function attachmentProxyUrl(url: string): string {
-  return url;
-}
-
-/** Extracts all attachments from a content item */
-export function itemAttachments(item: ContentItem): { name: string; url: string }[] {
-  const out: { name: string; url: string }[] = [];
-
-  for (const a of item.attachmentIds ?? []) {
-    const url = attachmentUrl(a);
-    if (url) out.push({ name: a.name ?? "Document", url });
-  }
-
-  for (const hw of item.homeworkIds ?? []) {
-    for (const a of hw.attachmentIds ?? []) {
-      const url = attachmentUrl(a);
-      if (url) out.push({ name: a.name ?? hw.topic ?? "Document", url });
+/** Extracts all available attachments from a content item */
+export function itemAttachments(item: ContentItem): Attachment[] {
+  const result: Attachment[] = [];
+  if (Array.isArray(item.attachments)) {
+    for (const a of item.attachments) {
+      if (a && (a.url || a.download_url || a.fileUrl || a.key)) {
+        result.push(a);
+      }
     }
   }
-
-  return out;
+  if (Array.isArray(item.attachmentIds)) {
+    for (const a of item.attachmentIds) {
+      if (a && (a.url || a.download_url || a.fileUrl || a.key)) {
+        result.push(a);
+      }
+    }
+  }
+  return result;
 }

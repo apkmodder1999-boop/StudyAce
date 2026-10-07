@@ -8,6 +8,7 @@ import {
   fetchContent,
   fetchVideoById,
   itemAttachments,
+  normalizeStreamUrl,
   proxyStream,
   resolvePlayback,
   extractVideoId,
@@ -245,16 +246,9 @@ function LecturePlayerView({
   const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
 
   // Resolve best stream URL
-  const rawStreamUrl =
-    videoData?.videoUrl ||
-    (item.videoDetails?.videoUrl?.includes(".mp4")
-      ? item.videoDetails.videoUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE)
-      : undefined) ||
-    item.url;
+  const rawStreamUrl = videoData?.videoUrl || item.videoDetails?.videoUrl || item.url;
 
-  const streamUrl = rawStreamUrl
-    ? rawStreamUrl.replace(/https?:\/\/a\.pimaxer\.in/gi, API_BASE)
-    : undefined;
+  const streamUrl = normalizeStreamUrl(rawStreamUrl);
 
   const isDirectMp4 = Boolean(
     streamUrl && (streamUrl.includes(".mp4") || streamUrl.includes("/stream/")),
