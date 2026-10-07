@@ -171,45 +171,78 @@ export function subjectImage(subject: Subject): string | undefined {
 }
 
 /**
- * Loads batches directly from the API rawly without query parameters.
- * Endpoint: http://a.pimaxer.in/v1/batches
+ * Loads all batches directly from the API.
+ * Endpoint: http://a.pimaxer.in/v1/batches?limit=0
  */
 export async function fetchBatches(): Promise<Batch[]> {
+  if (memoryBatchesCache && memoryBatchesCache.length > 0) {
+    return memoryBatchesCache;
+  }
   return fetchBatchesFromNetwork();
 }
 
 async function fetchBatchesFromNetwork(): Promise<Batch[]> {
   try {
-    const json = await getJSON<{
+    let rawBatches: Record<string, unknown>[] = [];
+
+    // Query with limit=0 to get ALL batches in a single fast call
+    const firstRes = await getJSON<{
       success?: boolean;
       total?: number;
       data?: Record<string, unknown>[];
-    }>(`${API_BASE}/v1/batches`);
+    }>(`${API_BASE}/v1/batches?limit=0`);
 
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      const list: Batch[] = json.data
-        .filter((b) => Boolean(b && (b["_id"] || b["batch_id"] || b["name"])))
-        .map((b) => ({
-          _id: String(b["_id"] || b["batch_id"] || b["id"]),
-          name: String(b["name"] || "Untitled Batch"),
-          class: typeof b["class"] === "string" ? b["class"] : undefined,
-          slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
-          byName: String(b["byName"] || b["cohort"] || b["description"] || ""),
-          startDate: typeof b["startDate"] === "string" ? b["startDate"] : undefined,
-          endDate: typeof b["endDate"] === "string" ? b["endDate"] : undefined,
-          language: String(b["language"] || b["medium"] || "Hinglish"),
-          previewImage: getBatchImageUrl(b["previewImage"]) || (b["photo"] as string) || undefined,
-          feeTotal: typeof b["feeTotal"] === "number" ? b["feeTotal"] : undefined,
-          type: String(b["type"] || b["batch_type"] || (b["class"] ? `Class ${b["class"]}` : "")),
-          status: typeof b["status"] === "string" ? b["status"] : undefined,
-          price:
-            typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
-        }));
+    if (Array.isArray(firstRes.data) && firstRes.data.length > 0) {
+      rawBatches = firstRes.data;
+    }
 
-      if (list.length > 0) {
-        memoryBatchesCache = list;
-        return list;
+    // In case limit=0 was paginated upstream, fetch remaining pages to get 100% of batches
+    const total = firstRes.total ?? rawBatches.length;
+    if (rawBatches.length < total) {
+      let page = 2;
+      while (rawBatches.length < total && page <= 10) {
+        try {
+          const nextRes = await getJSON<{
+            data?: Record<string, unknown>[];
+          }>(`${API_BASE}/v1/batches?page=${page}&limit=100`);
+          if (!nextRes.data || nextRes.data.length === 0) break;
+          rawBatches.push(...nextRes.data);
+          page++;
+        } catch {
+          break;
+        }
       }
+    }
+
+    // Deduplicate by ID and map
+    const seen = new Set<string>();
+    const list: Batch[] = [];
+
+    for (const b of rawBatches) {
+      const id = String(b["_id"] || b["batch_id"] || b["id"]);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+
+      list.push({
+        _id: id,
+        name: String(b["name"] || "Untitled Batch"),
+        class: typeof b["class"] === "string" ? b["class"] : undefined,
+        slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
+        byName: String(b["byName"] || b["cohort"] || b["description"] || ""),
+        startDate: typeof b["startDate"] === "string" ? b["startDate"] : undefined,
+        endDate: typeof b["endDate"] === "string" ? b["endDate"] : undefined,
+        language: String(b["language"] || b["medium"] || "Hinglish"),
+        previewImage: getBatchImageUrl(b["previewImage"]) || (b["photo"] as string) || undefined,
+        feeTotal: typeof b["feeTotal"] === "number" ? b["feeTotal"] : undefined,
+        type: String(b["type"] || b["batch_type"] || (b["class"] ? `Class ${b["class"]}` : "")),
+        status: typeof b["status"] === "string" ? b["status"] : undefined,
+        price: typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
+      });
+    }
+
+    if (list.length > 0) {
+      memoryBatchesCache = list;
+      return list;
     }
   } catch (err) {
     if (memoryBatchesCache && memoryBatchesCache.length > 0) {
