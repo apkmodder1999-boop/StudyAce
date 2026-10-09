@@ -398,6 +398,8 @@ function LecturePlayerView({
             <video
               ref={videoRef}
               controls
+              controlsList="nodownload"
+              onContextMenu={(e) => e.preventDefault()}
               playsInline
               poster={thumb}
               className="h-full w-full object-contain"

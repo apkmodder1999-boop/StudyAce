@@ -140,3 +140,11 @@
 @utility glow-ring {
   box-shadow: var(--shadow-glow);
 }
+
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  overflow: hidden;
+}
