@@ -2,7 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { Loader2, FileText, ArrowLeft, Zap, RotateCcw, RotateCw, Sliders, Eye } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  ArrowLeft,
+  Zap,
+  RotateCcw,
+  RotateCw,
+  Sliders,
+  Eye,
+  Moon,
+} from "lucide-react";
 import {
   API_BASE,
   fetchContent,
@@ -17,6 +27,9 @@ import {
 } from "@/lib/api";
 import { Shell, Crumbs, ErrorBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useXP } from "@/lib/xp-system";
+import { XPModal } from "@/components/XPModal";
+import { SleepTimerModal, SleepTimerTriggeredOverlay } from "@/components/SleepTimerModal";
 
 export const Route = createFileRoute(
   "/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId",
@@ -239,6 +252,15 @@ function LecturePlayerView({
   const duration = videoData?.duration || item.videoDetails?.duration;
   const thumb = videoData?.image || item.videoDetails?.image;
 
+  // PW XP Real-Time Tracker Hook
+  const { totalXp, unclaimedSeconds, addTime } = useXP();
+  const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+
+  // Sleep Timer States
+  const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  const [isSleepOverlayOpen, setIsSleepOverlayOpen] = useState(false);
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState<number | null>(null);
+
   // Multiple Quality states
   const [qualities, setQualities] = useState<
     { label: string; levelIndex: number; height?: number }[]
@@ -247,7 +269,6 @@ function LecturePlayerView({
 
   // Resolve best stream URL
   const rawStreamUrl = videoData?.videoUrl || item.videoDetails?.videoUrl || item.url;
-
   const streamUrl = normalizeStreamUrl(rawStreamUrl);
 
   const isDirectMp4 = Boolean(
@@ -255,7 +276,39 @@ function LecturePlayerView({
   );
 
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Real-time PW XP Tracker: adds 1 watch second every second played (120s = 1 XP)
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const v = videoRef.current;
+      if (v && !v.paused && !v.ended) {
+        addTime(1);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPlaying, addTime]);
+
+  // Sleep Timer Countdown Effect
+  useEffect(() => {
+    if (sleepTimerRemaining === null || sleepTimerRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setSleepTimerRemaining((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          if (videoRef.current) {
+            videoRef.current.pause();
+          }
+          setIsPlaying(false);
+          setIsSleepOverlayOpen(true);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sleepTimerRemaining]);
 
   // Initialize playback via native HTML5 video or HLS.js
   useEffect(() => {
@@ -266,7 +319,6 @@ function LecturePlayerView({
     if (isDirectMp4 || streamUrl.endsWith(".mp4")) {
       video.src = streamUrl;
       video.load();
-      // MP4 default qualities for switching indicator
       setQualities([
         { label: "Auto", levelIndex: -1 },
         { label: "1080p", levelIndex: 1080, height: 1080 },
@@ -296,7 +348,6 @@ function LecturePlayerView({
             };
           });
 
-          // Sort descending by height
           parsed.sort((a, b) => (b.height || 0) - (a.height || 0));
           setQualities([{ label: "Auto", levelIndex: -1 }, ...parsed]);
         }
@@ -355,24 +406,40 @@ function LecturePlayerView({
                 e.currentTarget.playbackRate = playbackSpeed;
               }}
               onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
             />
           </div>
 
-          {/* Quick Controls, Speed & Multiple Quality Selectors */}
+          {/* Quick Controls, Speed, Sleep Timer & Quality Selectors */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300">
                 <Zap className="h-3 w-3 fill-current text-sky-500" />
                 {isDirectMp4 ? "Ultra-Fast Stream" : "High-Definition Stream"}
               </span>
+
               {duration && (
                 <span className="text-slate-500 dark:text-slate-400 font-medium">
                   · Duration: {duration}
                 </span>
               )}
+
+              {/* PW XP Live Ticker Pill */}
+              <button
+                type="button"
+                onClick={() => setIsXpModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition cursor-pointer shadow-2xs"
+                title="PW XP: Earn 1 XP every 2 minutes of lecture watched"
+              >
+                <Zap className="h-3 w-3 fill-current text-amber-500 animate-pulse" />
+                <span>{totalXp} XP</span>
+                <span className="text-amber-600 dark:text-amber-400 font-mono text-[10px]">
+                  ({Math.floor(unclaimedSeconds / 60)}m {unclaimedSeconds % 60}s / 2m)
+                </span>
+              </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {/* Skip backward 10s */}
               <button
                 type="button"
@@ -393,6 +460,29 @@ function LecturePlayerView({
               >
                 <RotateCw className="h-3 w-3" />
                 <span>10s</span>
+              </button>
+
+              {/* Sleep Timer Button */}
+              <button
+                type="button"
+                onClick={() => setIsSleepModalOpen(true)}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                  sleepTimerRemaining !== null && sleepTimerRemaining > 0
+                    ? "border-indigo-400 bg-indigo-500 text-white shadow-xs"
+                    : "border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+                }`}
+                title="Set lecture sleep timer"
+              >
+                <Moon className="h-3 w-3 fill-current" />
+                {sleepTimerRemaining !== null && sleepTimerRemaining > 0 ? (
+                  <span className="font-mono">
+                    {Math.floor(sleepTimerRemaining / 60)}:
+                    {sleepTimerRemaining % 60 < 10 ? "0" : ""}
+                    {sleepTimerRemaining % 60}
+                  </span>
+                ) : (
+                  <span>Sleep Timer</span>
+                )}
               </button>
 
               {/* Playback Speed Selectors */}
@@ -552,6 +642,31 @@ function LecturePlayerView({
             ))}
           </div>
         </div>
+      )}
+
+      {/* PW XP Details Modal */}
+      <XPModal isOpen={isXpModalOpen} onClose={() => setIsXpModalOpen(false)} />
+
+      {/* Sleep Timer Selector Modal */}
+      <SleepTimerModal
+        isOpen={isSleepModalOpen}
+        onClose={() => setIsSleepModalOpen(false)}
+        activeRemainingSeconds={sleepTimerRemaining}
+        onSetTimer={(secs) => setSleepTimerRemaining(secs)}
+        onCancelTimer={() => setSleepTimerRemaining(null)}
+        videoDurationSeconds={videoRef.current?.duration || 0}
+        currentVideoTime={videoRef.current?.currentTime || 0}
+      />
+
+      {/* Sleep Timer Triggered Notification Overlay */}
+      {isSleepOverlayOpen && (
+        <SleepTimerTriggeredOverlay
+          onDismiss={() => setIsSleepOverlayOpen(false)}
+          onResume={() => {
+            setIsSleepOverlayOpen(false);
+            videoRef.current?.play();
+          }}
+        />
       )}
     </div>
   );

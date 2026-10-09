@@ -1,12 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Sparkles, Moon, Sun, Send } from "lucide-react";
+import { GraduationCap, Sparkles, Moon, Sun, Send, Zap } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { TelegramModal, TelegramFloatingButton } from "@/components/TelegramModal";
+import { XPModal, XPEarnedToast } from "@/components/XPModal";
+import { useXP } from "@/lib/xp-system";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme();
   const [isTelegramOpen, setIsTelegramOpen] = useState(false);
+  const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+  const { totalXp, levelInfo } = useXP();
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-sky-100 selection:text-sky-900 dark:selection:bg-sky-900 dark:selection:text-sky-100 transition-colors duration-200">
@@ -26,13 +30,27 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-3">
+          <nav className="flex items-center gap-1.5 sm:gap-2.5">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
             >
               <span>All Batches</span>
             </Link>
+
+            {/* PW XP Gamified Pill */}
+            <button
+              type="button"
+              onClick={() => setIsXpModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-2.5 sm:px-3 py-1.5 text-xs font-black text-amber-700 dark:text-amber-300 transition hover:bg-amber-100 dark:hover:bg-amber-900/60 hover:border-amber-300 cursor-pointer shadow-2xs"
+              title="PW XP & Level Status (1 XP per 2 mins watched)"
+            >
+              <Zap className="h-3.5 w-3.5 fill-current text-amber-500 animate-pulse" />
+              <span>{totalXp} XP</span>
+              <span className="hidden sm:inline font-bold text-[11px] text-amber-600 dark:text-amber-400">
+                · Lvl {levelInfo.level}
+              </span>
+            </button>
 
             {/* Telegram Community Button */}
             <button
@@ -65,6 +83,12 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-6 sm:px-6">{children}</main>
+
+      {/* PW XP Profile & Level Status Modal */}
+      <XPModal isOpen={isXpModalOpen} onClose={() => setIsXpModalOpen(false)} />
+
+      {/* Real-Time Micro Toast when XP increases */}
+      <XPEarnedToast />
 
       {/* Cool Telegram Channel Popup */}
       <TelegramModal isOpen={isTelegramOpen} onClose={() => setIsTelegramOpen(false)} />
