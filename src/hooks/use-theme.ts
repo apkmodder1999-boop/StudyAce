@@ -4,8 +4,10 @@ export type Theme = "light" | "dark";
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Read the current class on <html> set by inline anti-flash script or system
     const isDark = document.documentElement.classList.contains("dark");
     setTheme(isDark ? "dark" : "light");
@@ -23,7 +25,8 @@ export function useTheme() {
   }, []);
 
   const toggleTheme = () => {
-    const nextTheme: Theme = theme === "dark" ? "light" : "dark";
+    const currentTheme = mounted ? theme : "light";
+    const nextTheme: Theme = currentTheme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
 
     if (nextTheme === "dark") {
@@ -43,5 +46,5 @@ export function useTheme() {
     }
   };
 
-  return { theme, isDark: theme === "dark", toggleTheme };
+  return { theme, isDark: mounted && theme === "dark", toggleTheme, mounted };
 }

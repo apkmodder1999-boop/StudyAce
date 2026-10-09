@@ -25,6 +25,7 @@ import {
 } from "@/lib/api";
 import { Shell, Crumbs, PageTitle, Loading, EmptyBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatSimpleDate } from "@/lib/dates";
 
 const TABS: { key: ContentType; label: string }[] = [
   { key: "Videos", label: "Lectures" },
@@ -235,12 +236,15 @@ function VideoRow({
   topicId: string;
 }) {
   const thumb = item.videoDetails?.image;
+  const targetLectureId = item.videoDetails?._id || item.videoDetails?.id || item._id;
+  const title = item.topic ?? item.videoDetails?.name ?? item.name ?? "Lecture";
 
   return (
     <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none">
       <Link
         to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
-        params={{ batchId, subjectId, topicId, lectureId: item._id }}
+        params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
+        search={{ videoId: targetLectureId, title }}
         className="flex items-center gap-4 min-w-0 flex-1"
       >
         {thumb ? (
@@ -262,12 +266,14 @@ function VideoRow({
         )}
         <div className="min-w-0 flex-1">
           <h2 className="line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100 transition group-hover:text-sky-600 dark:group-hover:text-sky-400">
-            {item.topic ?? item.videoDetails?.name ?? item.name}
+            {title}
           </h2>
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
             {item.videoDetails?.duration && <span>{item.videoDetails.duration}</span>}
             {item.status && !item.videoDetails?.duration && <span>{item.status}</span>}
-            {item.startTime && <span>· {new Date(item.startTime).toLocaleDateString()}</span>}
+            {item.startTime && (
+              <span suppressHydrationWarning>· {formatSimpleDate(item.startTime)}</span>
+            )}
             <span className="text-slate-300 dark:text-slate-700">·</span>
             <span className="text-sky-600 dark:text-sky-400 font-semibold text-[11px]">
               HD Stream
@@ -279,7 +285,8 @@ function VideoRow({
       <div className="flex items-center gap-2 self-end sm:self-center pr-1">
         <Link
           to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
-          params={{ batchId, subjectId, topicId, lectureId: item._id }}
+          params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
+          search={{ videoId: targetLectureId, title }}
           className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 cursor-pointer"
         >
           <Play className="h-3 w-3 fill-current" />
@@ -358,7 +365,7 @@ function TestCard({
               <div className="flex items-center gap-1.5">
                 <span className="text-slate-300 dark:text-slate-700">·</span>
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>{new Date(item.startTime).toLocaleDateString()}</span>
+                <span suppressHydrationWarning>{formatSimpleDate(item.startTime)}</span>
               </div>
             )}
           </div>
@@ -376,7 +383,16 @@ function TestCard({
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Link
                 to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
-                params={{ batchId, subjectId, topicId, lectureId: item._id }}
+                params={{
+                  batchId,
+                  subjectId,
+                  topicId,
+                  lectureId: item.videoDetails?._id || item.videoDetails?.id || item._id,
+                }}
+                search={{
+                  videoId: item.videoDetails?._id || item.videoDetails?.id || item._id,
+                  title,
+                }}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 flex-1 sm:flex-initial cursor-pointer"
               >
                 <Play className="h-3.5 w-3.5 fill-current" />
@@ -467,7 +483,7 @@ function DocRow({
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
                     {hw.note && <span>{hw.note}</span>}
                     {item.startTime && (
-                      <span>· {new Date(item.startTime).toLocaleDateString()}</span>
+                      <span suppressHydrationWarning>· {formatSimpleDate(item.startTime)}</span>
                     )}
                   </div>
                 </div>
@@ -517,8 +533,11 @@ function DocRow({
           <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug">
             {title}
           </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-            {item.startTime ? new Date(item.startTime).toLocaleDateString() : item.status}
+          <p
+            suppressHydrationWarning
+            className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium"
+          >
+            {item.startTime ? formatSimpleDate(item.startTime) : item.status}
           </p>
         </div>
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-700 shrink-0">

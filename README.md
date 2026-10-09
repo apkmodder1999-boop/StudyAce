@@ -59,12 +59,15 @@ This application is built with TanStack Start and Nitro, configured with native 
 ### Build & Deploy Commands
 
 #### 1. Build Command
+
 ```bash
 npm run build
 ```
+
 This compiles the application and generates the Cloudflare Pages bundle in the `dist` directory with `_worker.js`, `_routes.json`, and optimized static assets.
 
 #### 2. Local Preview with Cloudflare Edge Runtime
+
 ```bash
 npm run preview:cf
 # Or directly:
@@ -72,6 +75,7 @@ npx wrangler pages dev dist
 ```
 
 #### 3. Deploy to Cloudflare Pages via CLI (Wrangler)
+
 ```bash
 # Build and deploy in a single step
 npm run deploy:prod
@@ -81,10 +85,13 @@ npm run deploy
 # Which executes:
 npx wrangler pages deploy dist
 ```
-*Note: If deploying for the first time via CLI, Wrangler will ask you to authorize your Cloudflare account and choose or create a Pages project name (e.g. `study-ace`).*
+
+_Note: If deploying for the first time via CLI, Wrangler will ask you to authorize your Cloudflare account and choose or create a Pages project name (e.g. `study-ace`)._
 
 #### 4. Deploy via Cloudflare Dashboard / Git Integration
+
 If you connect your GitHub repository to Cloudflare Pages in the Cloudflare Dashboard:
+
 - **Framework Preset**: `None` / `Custom`
 - **Build Command**: `npm run build`
 - **Build Output Directory**: `dist`
@@ -92,9 +99,10 @@ If you connect your GitHub repository to Cloudflare Pages in the Cloudflare Dash
 - **Compatibility Flags**: `nodejs_compat` (already preset via `wrangler.json`)
 
 ### Environment Variables
-Configure the following in the Cloudflare Pages project settings (under **Settings** > **Environment variables**):
-- `PW_TOKEN`: (Optional) Student session token for upstream PW API access and protected notes/videos.
 
+Configure the following in the Cloudflare Pages project settings (under **Settings** > **Environment variables**):
+
+- `PW_TOKEN`: (Optional) Student session token for upstream PW API access and protected notes/videos.
 
 ## Build with Lovable
 

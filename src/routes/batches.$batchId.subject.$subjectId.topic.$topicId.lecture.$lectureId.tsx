@@ -12,13 +12,17 @@ import {
   Sliders,
   Eye,
   Moon,
+  Play,
+  PlayCircle,
 } from "lucide-react";
 import {
   API_BASE,
+  PROXY_STREAM_BASE,
   fetchContent,
   fetchVideoById,
   itemAttachments,
   normalizeStreamUrl,
+  getAlternateStreamUrl,
   proxyStream,
   resolvePlayback,
   extractVideoId,
@@ -27,6 +31,7 @@ import {
 } from "@/lib/api";
 import { Shell, Crumbs, ErrorBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatSimpleDate } from "@/lib/dates";
 import { useXP } from "@/lib/xp-system";
 import { XPModal } from "@/components/XPModal";
 import { SleepTimerModal, SleepTimerTriggeredOverlay } from "@/components/SleepTimerModal";
@@ -34,6 +39,10 @@ import { SleepTimerModal, SleepTimerTriggeredOverlay } from "@/components/SleepT
 export const Route = createFileRoute(
   "/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId",
 )({
+  validateSearch: (search: Record<string, unknown>) => ({
+    videoId: typeof search["videoId"] === "string" ? search["videoId"] : undefined,
+    title: typeof search["title"] === "string" ? search["title"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Watch Lecture — Study Ace" },
@@ -53,31 +62,47 @@ export const Route = createFileRoute(
 
 function LecturePage() {
   const { batchId, subjectId, topicId, lectureId } = Route.useParams();
+  const { videoId: searchVideoId, title: searchTitle } = Route.useSearch();
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
     url: string;
   } | null>(null);
 
-  // 1. Fetch item from content pages
+  // 1. Fetch item from content pages (check current topic first)
   const {
     data: itemData,
     isLoading: itemLoading,
     error: itemError,
   } = useQuery({
-    queryKey: ["lecture-item", batchId, subjectId, topicId, lectureId],
+    queryKey: ["lecture-item", batchId, subjectId, topicId, lectureId, searchVideoId],
     queryFn: async () => {
       const pages = await Promise.all([
         fetchContent(batchId, subjectId, "Videos", topicId, 1),
-        fetchContent(batchId, subjectId, "Videos", undefined, 1),
-        fetchContent(batchId, subjectId, "Videos", undefined, 2),
+        fetchContent(batchId, subjectId, "Videos", topicId, 2),
       ]);
       const all = pages.flat();
+      const match = all.find(
+        (i) =>
+          i._id === lectureId ||
+          i._id === searchVideoId ||
+          i.videoDetails?._id === lectureId ||
+          i.videoDetails?._id === searchVideoId ||
+          i.videoDetails?.id === lectureId ||
+          i.videoDetails?.id === searchVideoId,
+      );
+      if (match) return match;
+
+      // Fallback: untagged videos
+      const untagged = await fetchContent(batchId, subjectId, "Videos", undefined, 1);
       return (
-        all.find(
+        untagged.find(
           (i) =>
             i._id === lectureId ||
+            i._id === searchVideoId ||
             i.videoDetails?._id === lectureId ||
-            i.videoDetails?.id === lectureId,
+            i.videoDetails?._id === searchVideoId ||
+            i.videoDetails?.id === lectureId ||
+            i.videoDetails?.id === searchVideoId,
         ) ?? null
       );
     },
@@ -85,20 +110,31 @@ function LecturePage() {
 
   // 2. Query direct video stream from proxy or resolution
   const { data: videoData, isLoading: videoLoading } = useQuery({
-    queryKey: ["lecture-video-stream", lectureId, itemData?.videoDetails?._id],
+    queryKey: [
+      "lecture-video-stream",
+      lectureId,
+      searchVideoId,
+      itemData?.videoDetails?._id || itemData?.videoDetails?.id,
+    ],
     queryFn: async () => {
-      // 1. Try itemData.videoDetails._id or id if available
+      // 1. If explicit videoId passed in search, query directly
+      if (searchVideoId) {
+        const vSearch = await fetchVideoById(searchVideoId);
+        if (vSearch?.videoUrl) return vSearch;
+      }
+
+      // 2. Query direct lectureId (if it's already a video ID)
+      const vDirect = await fetchVideoById(lectureId);
+      if (vDirect?.videoUrl) return vDirect;
+
+      // 3. Try itemData.videoDetails._id or id if available
       const nestedId = itemData?.videoDetails?._id || itemData?.videoDetails?.id;
-      if (nestedId) {
+      if (nestedId && nestedId !== lectureId && nestedId !== searchVideoId) {
         const vNested = await fetchVideoById(nestedId);
         if (vNested?.videoUrl) return vNested;
       }
 
-      // 2. Try lectureId
-      const vDirect = await fetchVideoById(lectureId);
-      if (vDirect?.videoUrl) return vDirect;
-
-      // 3. Try videoId extracted from itemData?.url or itemData?.videoDetails?.videoUrl
+      // 4. Try videoId extracted from itemData?.url or itemData?.videoDetails?.videoUrl
       const extractedId =
         extractVideoId(itemData?.url) || extractVideoId(itemData?.videoDetails?.videoUrl);
       if (extractedId && extractedId !== lectureId && extractedId !== nestedId) {
@@ -106,18 +142,18 @@ function LecturePage() {
         if (vExtracted?.videoUrl) return vExtracted;
       }
 
-      // 4. Fallback to resolvePlayback
+      // 5. Fallback to resolvePlayback
       const playback = await resolvePlayback(
         batchId,
         subjectId,
-        lectureId,
+        searchVideoId || lectureId,
         itemData?.videoDetails?.videoUrl || itemData?.url,
       );
       if (playback?.src) {
         return {
           _id: lectureId,
           videoUrl: playback.src,
-          name: itemData?.topic || itemData?.name,
+          name: itemData?.topic || itemData?.name || searchTitle,
           duration: itemData?.videoDetails?.duration,
           image: itemData?.videoDetails?.image,
         };
@@ -125,11 +161,10 @@ function LecturePage() {
 
       return null;
     },
-    enabled: true,
   });
 
-  // Show loading while either item or video stream details are fetching
-  const isOverallLoading = itemLoading || videoLoading;
+  // Loading while video stream details are fetching
+  const isOverallLoading = !videoData && (videoLoading || itemLoading);
 
   const handlePreviewPdf = (att: Attachment) => {
     const rawUrl = att.url || att.download_url || att.fileUrl || "";
@@ -319,6 +354,9 @@ function LecturePlayerView({
     if (isDirectMp4 || streamUrl.endsWith(".mp4")) {
       video.src = streamUrl;
       video.load();
+      video.play().catch(() => {
+        // Autoplay may be restricted until user taps play button
+      });
       setQualities([
         { label: "Auto", levelIndex: -1 },
         { label: "1080p", levelIndex: 1080, height: 1080 },
@@ -351,6 +389,7 @@ function LecturePlayerView({
           parsed.sort((a, b) => (b.height || 0) - (a.height || 0));
           setQualities([{ label: "Auto", levelIndex: -1 }, ...parsed]);
         }
+        video.play().catch(() => {});
       });
 
       hls.loadSource(proxiedHls);
@@ -362,6 +401,7 @@ function LecturePlayerView({
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = proxiedHls;
       video.load();
+      video.play().catch(() => {});
       setQualities([
         { label: "Auto", levelIndex: -1 },
         { label: "720p", levelIndex: 720, height: 720 },
@@ -370,6 +410,7 @@ function LecturePlayerView({
     } else {
       video.src = streamUrl;
       video.load();
+      video.play().catch(() => {});
     }
   }, [streamUrl, isDirectMp4]);
 
@@ -394,7 +435,7 @@ function LecturePlayerView({
       {/* Video Streaming Area */}
       {streamUrl ? (
         <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-md shadow-sky-100/50 dark:shadow-none rounded-2xl">
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 shadow-lg">
+          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 shadow-lg group">
             <video
               ref={videoRef}
               controls
@@ -402,7 +443,26 @@ function LecturePlayerView({
               onContextMenu={(e) => e.preventDefault()}
               playsInline
               poster={thumb}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-contain cursor-pointer"
+              onClick={() => {
+                const v = videoRef.current;
+                if (!v) return;
+                if (v.paused) {
+                  v.play().catch(() => {});
+                } else {
+                  v.pause();
+                }
+              }}
+              onError={() => {
+                const v = videoRef.current;
+                if (!v || !streamUrl) return;
+                const alt = getAlternateStreamUrl(streamUrl);
+                if (alt && v.src !== alt) {
+                  v.src = alt;
+                  v.load();
+                  v.play().catch(() => {});
+                }
+              }}
               onPlay={(e) => {
                 setIsPlaying(true);
                 e.currentTarget.playbackRate = playbackSpeed;
@@ -410,6 +470,23 @@ function LecturePlayerView({
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
             />
+
+            {/* Prominent Center Play Button when paused */}
+            {!isPlaying && (
+              <button
+                type="button"
+                onClick={() => {
+                  const v = videoRef.current;
+                  if (v) {
+                    v.play().catch(() => {});
+                  }
+                }}
+                className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-sky-600/95 hover:bg-sky-500 text-white shadow-2xl transition hover:scale-110 cursor-pointer pointer-events-auto"
+                aria-label="Play Lecture Video"
+              >
+                <Play className="h-8 w-8 fill-current ml-1 text-white" />
+              </button>
+            )}
           </div>
 
           {/* Quick Controls, Speed, Sleep Timer & Quality Selectors */}
@@ -564,9 +641,12 @@ function LecturePlayerView({
           <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
             Loading lecture…
           </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+          <p
+            suppressHydrationWarning
+            className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto"
+          >
             {item.startTime
-              ? `Session scheduled for ${new Date(item.startTime).toLocaleDateString()} at ${new Date(item.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Video stream will be available soon.`
+              ? `Session scheduled for ${formatSimpleDate(item.startTime)}. Video stream will be available soon.`
               : "Connecting to video stream server, please wait…"}
           </p>
         </div>
@@ -582,7 +662,9 @@ function LecturePlayerView({
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
               {duration && <span>{duration}</span>}
               {item.startTime && (
-                <span>· Scheduled: {new Date(item.startTime).toLocaleDateString()}</span>
+                <span suppressHydrationWarning>
+                  · Scheduled: {formatSimpleDate(item.startTime)}
+                </span>
               )}
               {item.status && (
                 <span className="rounded bg-sky-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-slate-700">

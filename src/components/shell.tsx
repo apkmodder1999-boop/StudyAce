@@ -10,7 +10,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme();
   const [isTelegramOpen, setIsTelegramOpen] = useState(false);
   const [isXpModalOpen, setIsXpModalOpen] = useState(false);
-  const { totalXp, levelInfo } = useXP();
+  const { totalXp, levelInfo, isMounted } = useXP();
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-sky-100 selection:text-sky-900 dark:selection:bg-sky-900 dark:selection:text-sky-100 transition-colors duration-200">
@@ -44,11 +44,15 @@ export function Shell({ children }: { children: ReactNode }) {
               onClick={() => setIsXpModalOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-2.5 sm:px-3 py-1.5 text-xs font-black text-amber-700 dark:text-amber-300 transition hover:bg-amber-100 dark:hover:bg-amber-900/60 hover:border-amber-300 cursor-pointer shadow-2xs"
               title="PW XP & Level Status (1 XP per 2 mins watched)"
+              suppressHydrationWarning
             >
               <Zap className="h-3.5 w-3.5 fill-current text-amber-500 animate-pulse" />
-              <span>{totalXp} XP</span>
-              <span className="hidden sm:inline font-bold text-[11px] text-amber-600 dark:text-amber-400">
-                · Lvl {levelInfo.level}
+              <span suppressHydrationWarning>{isMounted ? totalXp : 0} XP</span>
+              <span
+                suppressHydrationWarning
+                className="hidden sm:inline font-bold text-[11px] text-amber-600 dark:text-amber-400"
+              >
+                · Lvl {isMounted ? levelInfo.level : 1}
               </span>
             </button>
 
@@ -71,6 +75,7 @@ export function Shell({ children }: { children: ReactNode }) {
               className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer shadow-2xs"
               title={isDark ? "Switch to light mode" : "Switch to dark mode"}
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              suppressHydrationWarning
             >
               {isDark ? (
                 <Sun className="h-4 w-4 text-amber-400 transition-transform duration-200 rotate-0 scale-100" />

@@ -60,16 +60,9 @@
   --border: #e2e8f0;
   --input: #e2e8f0;
   --ring: #38bdf8;
-  --gradient-hero: radial-gradient(
-    1400px 560px at 50% -40px,
-    #f0f9ff 0%,
-    #f8fbff 45%,
-    #ffffff 85%
-  );
+  --gradient-hero: radial-gradient(1400px 560px at 50% -40px, #f0f9ff 0%, #f8fbff 45%, #ffffff 85%);
   --shadow-card: 0 2px 12px -2px rgba(186, 230, 253, 0.35), 0 1px 3px rgba(15, 23, 42, 0.02);
-  --shadow-glow:
-    0 0 0 1px rgba(14, 165, 233, 0.25),
-    0 10px 28px -10px rgba(14, 165, 233, 0.25);
+  --shadow-glow: 0 0 0 1px rgba(14, 165, 233, 0.25), 0 10px 28px -10px rgba(14, 165, 233, 0.25);
 }
 
 .dark {
@@ -103,9 +96,7 @@
     #050811 100%
   );
   --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-glow:
-    0 0 0 1px rgba(56, 189, 248, 0.3),
-    0 10px 28px -10px rgba(56, 189, 248, 0.3);
+  --shadow-glow: 0 0 0 1px rgba(56, 189, 248, 0.3), 0 10px 28px -10px rgba(56, 189, 248, 0.3);
 }
 
 @layer base {
@@ -139,12 +130,4 @@
 
 @utility glow-ring {
   box-shadow: var(--shadow-glow);
-}
-
-video::-internal-media-controls-download-button {
-  display: none !important;
-}
-
-video::-webkit-media-controls-enclosure {
-  overflow: hidden;
 }

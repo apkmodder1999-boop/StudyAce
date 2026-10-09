@@ -190,10 +190,23 @@ export function addWatchSeconds(secondsToAdd: number): {
   };
 }
 
+const DEFAULT_XP_STATE: UserXPState = {
+  totalXp: 0,
+  totalWatchSeconds: 0,
+  todayXp: 0,
+  lastActiveDate: "",
+  streakDays: 1,
+  unclaimedSeconds: 0,
+};
+
 export function useXP() {
-  const [xpState, setXpState] = useState<UserXPState>(getXpState);
+  const [xpState, setXpState] = useState<UserXPState>(DEFAULT_XP_STATE);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    setXpState(getXpState());
+
     const handleUpdate = () => {
       setXpState(getXpState());
     };
@@ -216,6 +229,7 @@ export function useXP() {
     ...xpState,
     levelInfo,
     addTime,
+    isMounted,
     secondsPerXp: SECONDS_PER_XP,
   };
 }

@@ -171,78 +171,45 @@ export function subjectImage(subject: Subject): string | undefined {
 }
 
 /**
- * Loads all batches directly from the API.
- * Endpoint: http://a.pimaxer.in/v1/batches?limit=0
+ * Loads batches directly from the API rawly without query parameters.
+ * Endpoint: http://a.pimaxer.in/v1/batches
  */
 export async function fetchBatches(): Promise<Batch[]> {
-  if (memoryBatchesCache && memoryBatchesCache.length > 0) {
-    return memoryBatchesCache;
-  }
   return fetchBatchesFromNetwork();
 }
 
 async function fetchBatchesFromNetwork(): Promise<Batch[]> {
   try {
-    let rawBatches: Record<string, unknown>[] = [];
-
-    // Query with limit=0 to get ALL batches in a single fast call
-    const firstRes = await getJSON<{
+    const json = await getJSON<{
       success?: boolean;
       total?: number;
       data?: Record<string, unknown>[];
-    }>(`${API_BASE}/v1/batches?limit=0`);
+    }>(`${API_BASE}/v1/batches`);
 
-    if (Array.isArray(firstRes.data) && firstRes.data.length > 0) {
-      rawBatches = firstRes.data;
-    }
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      const list: Batch[] = json.data
+        .filter((b) => Boolean(b && (b["_id"] || b["batch_id"] || b["name"])))
+        .map((b) => ({
+          _id: String(b["_id"] || b["batch_id"] || b["id"]),
+          name: String(b["name"] || "Untitled Batch"),
+          class: typeof b["class"] === "string" ? b["class"] : undefined,
+          slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
+          byName: String(b["byName"] || b["cohort"] || b["description"] || ""),
+          startDate: typeof b["startDate"] === "string" ? b["startDate"] : undefined,
+          endDate: typeof b["endDate"] === "string" ? b["endDate"] : undefined,
+          language: String(b["language"] || b["medium"] || "Hinglish"),
+          previewImage: getBatchImageUrl(b["previewImage"]) || (b["photo"] as string) || undefined,
+          feeTotal: typeof b["feeTotal"] === "number" ? b["feeTotal"] : undefined,
+          type: String(b["type"] || b["batch_type"] || (b["class"] ? `Class ${b["class"]}` : "")),
+          status: typeof b["status"] === "string" ? b["status"] : undefined,
+          price:
+            typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
+        }));
 
-    // In case limit=0 was paginated upstream, fetch remaining pages to get 100% of batches
-    const total = firstRes.total ?? rawBatches.length;
-    if (rawBatches.length < total) {
-      let page = 2;
-      while (rawBatches.length < total && page <= 10) {
-        try {
-          const nextRes = await getJSON<{
-            data?: Record<string, unknown>[];
-          }>(`${API_BASE}/v1/batches?page=${page}&limit=100`);
-          if (!nextRes.data || nextRes.data.length === 0) break;
-          rawBatches.push(...nextRes.data);
-          page++;
-        } catch {
-          break;
-        }
+      if (list.length > 0) {
+        memoryBatchesCache = list;
+        return list;
       }
-    }
-
-    // Deduplicate by ID and map
-    const seen = new Set<string>();
-    const list: Batch[] = [];
-
-    for (const b of rawBatches) {
-      const id = String(b["_id"] || b["batch_id"] || b["id"]);
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-
-      list.push({
-        _id: id,
-        name: String(b["name"] || "Untitled Batch"),
-        class: typeof b["class"] === "string" ? b["class"] : undefined,
-        slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
-        byName: String(b["byName"] || b["cohort"] || b["description"] || ""),
-        startDate: typeof b["startDate"] === "string" ? b["startDate"] : undefined,
-        endDate: typeof b["endDate"] === "string" ? b["endDate"] : undefined,
-        language: String(b["language"] || b["medium"] || "Hinglish"),
-        previewImage: getBatchImageUrl(b["previewImage"]) || (b["photo"] as string) || undefined,
-        feeTotal: typeof b["feeTotal"] === "number" ? b["feeTotal"] : undefined,
-        type: String(b["type"] || b["batch_type"] || (b["class"] ? `Class ${b["class"]}` : "")),
-        status: typeof b["status"] === "string" ? b["status"] : undefined,
-        price: typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
-      });
-    }
-
-    if (list.length > 0) {
-      memoryBatchesCache = list;
-      return list;
     }
   } catch (err) {
     if (memoryBatchesCache && memoryBatchesCache.length > 0) {
@@ -391,29 +358,44 @@ export async function fetchTopicContent(
   return fetchContent(batchId, subjectId, contentType, topicId, 1);
 }
 
-/** Normalizes stream URL for active page protocol */
+export const PROXY_STREAM_BASE = "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com";
+
+/** Normalizes stream URL for active page protocol and uses pw-api-proxy per user instruction */
 export function normalizeStreamUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   let res = url.trim();
   if (res.startsWith("/stream/")) {
-    res = `${API_BASE}${res}`;
+    res = `${PROXY_STREAM_BASE}${res}`;
   }
-  if (
-    typeof window !== "undefined" &&
-    window.location.protocol === "https:" &&
-    res.startsWith("http://a.pimaxer.in")
-  ) {
-    res = res.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
+  // User instruction: "BUT INSTEAD OF a.pimaxer.in we will use pw-api-proxy-v1-dc90b930c4fa.herokuapp.com"
+  if (res.includes("a.pimaxer.in/stream/")) {
+    res = res.replace(/https?:\/\/a\.pimaxer\.in\/stream\//i, `${PROXY_STREAM_BASE}/stream/`);
   }
   return res;
 }
 
+/** Provides alternate stream mirror if primary stream fails */
+export function getAlternateStreamUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.includes("pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/")) {
+    return url.replace(
+      "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/",
+      "https://a.pimaxer.in/stream/",
+    );
+  }
+  if (url.includes("a.pimaxer.in/stream/")) {
+    return url.replace(/https?:\/\/a\.pimaxer\.in\/stream\//i, `${PROXY_STREAM_BASE}/stream/`);
+  }
+  return undefined;
+}
+
 /**
  * Direct Video Stream & Metadata Query
- * Endpoint: http://a.pimaxer.in/v1/videos/{videoId}
+ * Tries a.pimaxer.in first, then pw-api-proxy
  */
 export async function fetchVideoById(videoId: string): Promise<VideoDetails | null> {
   if (!videoId) return null;
+  // 1. Try a.pimaxer.in
   try {
     const json = await getJSON<{
       success?: boolean;
@@ -430,6 +412,25 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
   } catch {
     // endpoint returned 404 or video not ready
   }
+
+  // 2. Fallback to pw-api-proxy
+  try {
+    const json = await getJSON<{
+      success?: boolean;
+      data?: VideoDetails;
+    }>(`${PROXY_STREAM_BASE}/v1/videos/${videoId}`);
+
+    if (json?.data && (json.data.videoUrl || json.data._id || json.data.id)) {
+      const vid: VideoDetails = { ...json.data };
+      if (vid.videoUrl) {
+        vid.videoUrl = normalizeStreamUrl(vid.videoUrl);
+      }
+      return vid;
+    }
+  } catch {
+    // ignore
+  }
+
   return null;
 }
 

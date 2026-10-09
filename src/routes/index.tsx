@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Sparkles, ArrowRight } from "lucide-react";
 import { fetchBatches } from "@/lib/api";
+import { formatBatchDate } from "@/lib/dates";
 import { Shell, PageTitle, Loading, ErrorBox, EmptyBox } from "@/components/shell";
 
 export const Route = createFileRoute("/")({
@@ -24,20 +25,6 @@ export const Route = createFileRoute("/")({
   }),
   component: BatchesPage,
 });
-
-function formatBatchDate(dateStr?: string): string {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-IN", {
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
 function BatchesPage() {
   const [q, setQ] = useState("");
@@ -159,7 +146,10 @@ function BatchesPage() {
                 )}
 
                 {(b.startDate || b.endDate) && (
-                  <p className="mt-3 text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  <p
+                    suppressHydrationWarning
+                    className="mt-3 text-xs text-slate-400 dark:text-slate-500 font-medium"
+                  >
                     {b.startDate ? formatBatchDate(b.startDate) : ""}
                     {b.endDate ? ` → ${formatBatchDate(b.endDate)}` : ""}
                   </p>
@@ -170,8 +160,11 @@ function BatchesPage() {
             <div className="border-t border-sky-100/80 dark:border-slate-800/80 bg-sky-50/30 dark:bg-slate-850/50 px-5 py-3.5 flex items-center justify-between">
               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 {b.feeTotal ? (
-                  <span className="text-slate-400 dark:text-slate-500 line-through mr-1 font-normal">
-                    ₹{b.feeTotal?.toLocaleString("en-IN")}
+                  <span
+                    suppressHydrationWarning
+                    className="text-slate-400 dark:text-slate-500 line-through mr-1 font-normal"
+                  >
+                    ₹{b.feeTotal}
                   </span>
                 ) : null}
                 FREE ACCESS
