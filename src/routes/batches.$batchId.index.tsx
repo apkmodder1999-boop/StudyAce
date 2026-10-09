@@ -1,9 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { fetchBatchDetails, subjectImage } from "@/lib/api";
+import { fetchBatchDetails, subjectImage, getBatchImageUrl } from "@/lib/api";
 import { Shell, PageTitle, Crumbs, Loading, ErrorBox, EmptyBox } from "@/components/shell";
-import { BookOpen, Search, ArrowRight, User } from "lucide-react";
+import {
+  BookOpen,
+  Search,
+  ArrowRight,
+  User,
+  BookmarkCheck,
+  Check,
+  Plus,
+  Sparkles,
+} from "lucide-react";
+import { useEnrollment } from "@/lib/enrollment-system";
 
 export const Route = createFileRoute("/batches/$batchId/")({
   head: () => ({
@@ -26,12 +36,14 @@ export const Route = createFileRoute("/batches/$batchId/")({
 function BatchPage() {
   const { batchId } = Route.useParams();
   const [filter, setFilter] = useState("");
+  const { isEnrolled, enroll, unenroll } = useEnrollment();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["batch", batchId],
     queryFn: () => fetchBatchDetails(batchId),
   });
 
+  const enrolled = isEnrolled(batchId);
   const allSubjects = useMemo(() => data?.subjects ?? [], [data?.subjects]);
 
   const filteredSubjects = useMemo(() => {
@@ -47,7 +59,7 @@ function BatchPage() {
           {
             label: "Batches",
             to: (
-              <Link to="/" className="hover:text-sky-600 transition">
+              <Link to="/" search={{ tab: "all" }} className="hover:text-sky-600 transition">
                 Batches
               </Link>
             ),
@@ -62,7 +74,66 @@ function BatchPage() {
           data?.byName ??
           "Select a subject below to explore chapters, watch video lectures, and access study materials."
         }
-      />
+      >
+        {data && (
+          <div className="flex items-center gap-2">
+            {enrolled ? (
+              <button
+                type="button"
+                onClick={() => unenroll(batchId)}
+                className="group inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-200 transition hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 shadow-2xs cursor-pointer"
+                title="Click to unenroll from this batch"
+              >
+                <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 group-hover:hidden" />
+                <span className="group-hover:hidden">Enrolled</span>
+                <span className="hidden group-hover:inline">Unenroll</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  enroll({
+                    _id: batchId,
+                    name: data.name,
+                    byName: data.byName,
+                    startDate: data.startDate,
+                    endDate: data.endDate,
+                    previewImage: getBatchImageUrl(data.previewImage),
+                  })
+                }
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 active:bg-sky-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:shadow-sky-500/25 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Enroll in Batch</span>
+              </button>
+            )}
+          </div>
+        )}
+      </PageTitle>
+
+      {/* Enrolled Status Banner */}
+      {!isLoading && !error && enrolled && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-3.5 sm:px-4 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-emerald-500 text-white shadow-2xs">
+              <BookmarkCheck className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                You are enrolled in this batch!
+              </span>
+              <p className="text-slate-600 dark:text-slate-400 text-[11px] truncate">
+                Pinned to your My Batches dashboard. All {allSubjects.length} subjects and study
+                materials are active.
+              </p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 shrink-0 text-[11px]">
+            <Sparkles className="h-3 w-3" />
+            Active Learning
+          </span>
+        </div>
+      )}
 
       {isLoading && <Loading text="Loading batch subjects…" />}
       {error && <ErrorBox message={(error as Error).message} />}

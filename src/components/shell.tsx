@@ -1,22 +1,29 @@
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Sparkles, Moon, Sun, Send, Zap } from "lucide-react";
+import { GraduationCap, Sparkles, Moon, Sun, Send, Zap, BookmarkCheck } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
 import { TelegramModal, TelegramFloatingButton } from "@/components/TelegramModal";
 import { XPModal, XPEarnedToast } from "@/components/XPModal";
+import { EnrollmentToast } from "@/components/EnrollmentToast";
 import { useXP } from "@/lib/xp-system";
+import { useEnrollment } from "@/lib/enrollment-system";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme();
   const [isTelegramOpen, setIsTelegramOpen] = useState(false);
   const [isXpModalOpen, setIsXpModalOpen] = useState(false);
   const { totalXp, levelInfo, isMounted } = useXP();
+  const { enrolledCount } = useEnrollment();
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-sky-100 selection:text-sky-900 dark:selection:bg-sky-900 dark:selection:text-sky-100 transition-colors duration-200">
       <header className="sticky top-0 z-30 border-b border-sky-100/80 dark:border-slate-800/80 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md transition-all">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <Link to="/" className="group flex items-center gap-2.5 transition">
+          <Link
+            to="/"
+            search={{ tab: "all" }}
+            className="group flex items-center gap-2.5 transition"
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-sm shadow-sky-500/25 transition group-hover:scale-105">
               <GraduationCap className="h-5 w-5" />
             </div>
@@ -33,9 +40,27 @@ export function Shell({ children }: { children: ReactNode }) {
           <nav className="flex items-center gap-1.5 sm:gap-2.5">
             <Link
               to="/"
+              search={{ tab: "all" }}
               className="inline-flex items-center gap-1.5 rounded-lg px-2 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
             >
               <span>All Batches</span>
+            </Link>
+
+            {/* My Enrolled Batches Link */}
+            <Link
+              to="/"
+              search={{ tab: "enrolled" }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/40 px-2 sm:px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-900/60 hover:border-emerald-300 cursor-pointer shadow-2xs"
+              title="View your enrolled study batches"
+            >
+              <BookmarkCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>My Batches</span>
+              <span
+                suppressHydrationWarning
+                className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-200/80 dark:bg-emerald-900 px-1 text-[10px] font-extrabold text-emerald-800 dark:text-emerald-200"
+              >
+                {isMounted ? enrolledCount : 0}
+              </span>
             </Link>
 
             {/* PW XP Gamified Pill */}
@@ -94,6 +119,9 @@ export function Shell({ children }: { children: ReactNode }) {
 
       {/* Real-Time Micro Toast when XP increases */}
       <XPEarnedToast />
+
+      {/* Real-Time Micro Toast when Batch Enrolled / Unenrolled */}
+      <EnrollmentToast />
 
       {/* Cool Telegram Channel Popup */}
       <TelegramModal isOpen={isTelegramOpen} onClose={() => setIsTelegramOpen(false)} />
