@@ -28,7 +28,7 @@ export default defineConfig({
     },
   },
   nitro: {
-    preset: process.env["NITRO_PRESET"] || "cloudflare-pages",
+    preset: "cloudflare-pages",
     rolldownConfig: {
       checks: {
         moduleLevelDirective: false,

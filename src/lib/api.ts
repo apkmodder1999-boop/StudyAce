@@ -171,26 +171,89 @@ export function subjectImage(subject: Subject): string | undefined {
 }
 
 /**
- * Loads batches directly from the API rawly without query parameters.
- * Endpoint: http://a.pimaxer.in/v1/batches
+ * Loads all batches up-front with limit=200 and parallel pagination.
+ * Endpoint: http://a.pimaxer.in/v1/batches?page=1&limit=200
+ * Automatically calculates total pages and fetches all batches up-front so that
+ * all batches (including page 2, CTET, etc.) are available for instant search and browsing.
  */
 export async function fetchBatches(): Promise<Batch[]> {
+  // 1. Fast in-memory cache check
+  if (memoryBatchesCache && memoryBatchesCache.length > 0) {
+    return memoryBatchesCache;
+  }
+
+  // 2. Fast client localStorage cache check (instant render)
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem("pw_batches_all_v2");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          memoryBatchesCache = parsed;
+          // Revalidate in background asynchronously
+          fetchBatchesFromNetwork().catch(() => {});
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore storage access errors
+    }
+  }
+
   return fetchBatchesFromNetwork();
 }
 
 async function fetchBatchesFromNetwork(): Promise<Batch[]> {
   try {
-    const json = await getJSON<{
+    // Step 1: Fetch Page 1 with limit=200
+    const page1 = await getJSON<{
       success?: boolean;
       total?: number;
+      page?: number;
+      limit?: number;
       data?: Record<string, unknown>[];
-    }>(`${API_BASE}/v1/batches`);
+    }>(`${API_BASE}/v1/batches?page=1&limit=200`);
 
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      const list: Batch[] = json.data
-        .filter((b) => Boolean(b && (b["_id"] || b["batch_id"] || b["name"])))
-        .map((b) => ({
-          _id: String(b["_id"] || b["batch_id"] || b["id"]),
+    const rawList: Record<string, unknown>[] = Array.isArray(page1.data) ? [...page1.data] : [];
+    const total = typeof page1.total === "number" ? page1.total : rawList.length;
+    const limit = typeof page1.limit === "number" && page1.limit > 0 ? page1.limit : 200;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
+    // Step 2: Fetch all remaining pages in parallel if more than 1 page
+    if (totalPages > 1) {
+      const remainingPromises: Promise<{ data?: Record<string, unknown>[] }>[] = [];
+      for (let p = 2; p <= totalPages; p++) {
+        remainingPromises.push(
+          getJSON<{ data?: Record<string, unknown>[] }>(
+            `${API_BASE}/v1/batches?page=${p}&limit=200`,
+          ).catch((err) => {
+            console.warn(`[Batches] Failed to fetch page ${p}:`, err);
+            return { data: [] };
+          }),
+        );
+      }
+
+      const results = await Promise.all(remainingPromises);
+      for (const res of results) {
+        if (Array.isArray(res?.data)) {
+          rawList.push(...res.data);
+        }
+      }
+    }
+
+    if (rawList.length > 0) {
+      // Deduplicate by batch ID
+      const seenIds = new Set<string>();
+      const list: Batch[] = [];
+
+      for (const b of rawList) {
+        if (!b) continue;
+        const id = String(b["_id"] || b["batch_id"] || b["id"] || "");
+        if (!id || seenIds.has(id)) continue;
+        seenIds.add(id);
+
+        list.push({
+          _id: id,
           name: String(b["name"] || "Untitled Batch"),
           class: typeof b["class"] === "string" ? b["class"] : undefined,
           slug: typeof b["slug"] === "string" ? b["slug"] : undefined,
@@ -204,10 +267,18 @@ async function fetchBatchesFromNetwork(): Promise<Batch[]> {
           status: typeof b["status"] === "string" ? b["status"] : undefined,
           price:
             typeof b["price"] === "object" ? (b["price"] as Record<string, unknown>) : undefined,
-        }));
+        });
+      }
 
       if (list.length > 0) {
         memoryBatchesCache = list;
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("pw_batches_all_v2", JSON.stringify(list));
+          } catch {
+            // ignore quota errors
+          }
+        }
         return list;
       }
     }

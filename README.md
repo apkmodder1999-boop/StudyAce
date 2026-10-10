@@ -95,14 +95,8 @@ If you connect your GitHub repository to Cloudflare Pages in the Cloudflare Dash
 - **Framework Preset**: `None` / `Custom`
 - **Build Command**: `npm run build`
 - **Build Output Directory**: `dist`
-- **Node.js Version**: `20` or higher (set environment variable `NODE_VERSION=20`)
+- **Node.js Version**: `20` or higher
 - **Compatibility Flags**: `nodejs_compat` (already preset via `wrangler.json`)
-
-### Environment Variables
-
-Configure the following in the Cloudflare Pages project settings (under **Settings** > **Environment variables**):
-
-- `PW_TOKEN`: (Optional) Student session token for upstream PW API access and protected notes/videos.
 
 ## Build with Lovable
 
