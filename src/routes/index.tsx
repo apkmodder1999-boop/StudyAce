@@ -202,7 +202,7 @@ function BatchesPage() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search batches by name, exam (JEE, NEET), class..."
-            className="w-full py-[13px] pl-[46px] pr-[44px] text-[14.5px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 rounded-xl bg-card text-foreground outline-none shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:border-[#2563eb] focus:ring-3 focus:ring-[#2563eb]/15 transition-all"
+            className="w-full py-[13px] pl-[46px] pr-[44px] text-[14.5px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 rounded-xl bg-card text-foreground outline-none shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:border-primary focus:ring-3 focus:ring-primary/20 transition-all"
           />
           {q && (
             <button
@@ -245,7 +245,7 @@ function BatchesPage() {
           >
             <span>All Batches</span>
             {data && (
-              <span className="rounded-full bg-[#2563eb]/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-[#2563eb]">
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-primary">
                 {data.length}
               </span>
             )}
@@ -260,11 +260,11 @@ function BatchesPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <BookmarkCheck className="h-3.5 w-3.5 text-[#2563eb]" />
+            <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
             <span>Enrolled</span>
             <span
               suppressHydrationWarning
-              className="rounded-full bg-[#2563eb]/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-[#2563eb]"
+              className="rounded-full bg-primary/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-primary"
             >
               {isMounted ? enrolledCount : 0}
             </span>
@@ -343,7 +343,7 @@ function BatchesPage() {
                 setSelectedCategory("all");
                 if (tab === "enrolled") handleTabChange("all");
               }}
-              className="bg-[#2563eb] text-white px-5 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition cursor-pointer"
+              className="bg-primary text-primary-foreground px-5 py-2 rounded-lg font-bold text-xs hover:opacity-90 transition cursor-pointer shadow-xs"
             >
               Reset Search
             </button>
@@ -412,7 +412,7 @@ function BatchesPage() {
                   </div>
 
                   {enrolled && (
-                    <div className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold text-[#2563eb] flex items-center gap-1 shadow-xs border border-blue-200 dark:border-blue-900">
+                    <div className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-xs border border-primary/25">
                       <BookmarkCheck className="h-3 w-3" />
                       <span>Enrolled</span>
                     </div>
@@ -466,7 +466,7 @@ function BatchesPage() {
                         className={`px-4 py-2 rounded-[10px] text-[13.5px] font-bold font-inherit cursor-pointer flex items-center gap-1.5 transition-all ${
                           enrolled
                             ? "bg-slate-200 dark:bg-slate-700 text-[#0f172a] dark:text-slate-100 hover:bg-rose-100 hover:text-rose-600"
-                            : "bg-[#111827] dark:bg-blue-600 text-white hover:bg-[#1e293b] dark:hover:bg-blue-700 hover:scale-[1.02]"
+                            : "bg-[#111827] dark:bg-primary text-white dark:text-primary-foreground hover:bg-[#1e293b] dark:hover:opacity-90 hover:scale-[1.02]"
                         }`}
                       >
                         {enrolled ? "Enrolled ✓" : "Enroll Now"}

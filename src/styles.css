@@ -75,6 +75,60 @@
   --shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 8px 24px -6px rgba(37, 99, 235, 0.18);
 }
 
+/* UI COLOR THEME: BLUE #25A7DA (Light) */
+:root[data-color="blue"] {
+  --pw-blue: #25a7da;
+  --primary: #25a7da;
+  --primary-foreground: #ffffff;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --secondary: #f0f9fc;
+  --secondary-foreground: #0369a1;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0f9fc;
+  --accent-foreground: #0284c7;
+  --border: #e2e8f0;
+  --ring: #25a7da;
+  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.25), 0 8px 24px -6px rgba(37, 167, 218, 0.15);
+  --gradient-hero: radial-gradient(
+    1200px 520px at 50% -40px,
+    rgba(37, 167, 218, 0.08) 0%,
+    rgba(37, 167, 218, 0.02) 35%,
+    #f8fafc 80%
+  );
+}
+
+/* UI COLOR THEME: GREEN #7CFC00 (Light) */
+:root[data-color="green"] {
+  --pw-blue: #7cfc00;
+  --primary: #7cfc00;
+  --primary-foreground: #090d16;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --secondary: #f4fce8;
+  --secondary-foreground: #365314;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f4fce8;
+  --accent-foreground: #365314;
+  --border: #e2e8f0;
+  --ring: #7cfc00;
+  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.3), 0 8px 24px -6px rgba(124, 252, 0, 0.18);
+  --gradient-hero: radial-gradient(
+    1200px 520px at 50% -40px,
+    rgba(124, 252, 0, 0.08) 0%,
+    rgba(124, 252, 0, 0.02) 35%,
+    #f8fafc 80%
+  );
+}
+
 .dark {
   /* Dark Theme */
   --pw-blue: #3b82f6;
@@ -117,6 +171,68 @@
   );
   --shadow-card: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 0 1px rgba(59, 130, 246, 0.25), 0 8px 24px -6px rgba(59, 130, 246, 0.2);
+}
+
+/* UI COLOR THEME: BLUE #25A7DA (Dark) */
+.dark[data-color="blue"],
+:root.dark[data-color="blue"],
+[data-color="blue"].dark,
+[data-color="blue"] .dark {
+  --pw-blue: #25a7da;
+  --primary: #25a7da;
+  --primary-foreground: #ffffff;
+  --background: #0b0f17;
+  --foreground: #f8fafc;
+  --surface: #111827;
+  --surface-2: #1e293b;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --secondary: #0f2330;
+  --secondary-foreground: #38bdf8;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #112836;
+  --accent-foreground: #38bdf8;
+  --border: #1e293b;
+  --ring: #25a7da;
+  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.3), 0 8px 24px -6px rgba(37, 167, 218, 0.2);
+  --gradient-hero: radial-gradient(
+    1200px 520px at 50% -40px,
+    rgba(37, 167, 218, 0.1) 0%,
+    rgba(17, 24, 39, 0.3) 40%,
+    #0b0f17 90%
+  );
+}
+
+/* UI COLOR THEME: GREEN #7CFC00 (Dark) */
+.dark[data-color="green"],
+:root.dark[data-color="green"],
+[data-color="green"].dark,
+[data-color="green"] .dark {
+  --pw-blue: #7cfc00;
+  --primary: #7cfc00;
+  --primary-foreground: #090d16;
+  --background: #0b0f17;
+  --foreground: #f8fafc;
+  --surface: #111827;
+  --surface-2: #1e293b;
+  --card: #111827;
+  --card-foreground: #f8fafc;
+  --secondary: #1a2e0a;
+  --secondary-foreground: #a3e635;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e380a;
+  --accent-foreground: #a3e635;
+  --border: #1e293b;
+  --ring: #7cfc00;
+  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.35), 0 8px 24px -6px rgba(124, 252, 0, 0.2);
+  --gradient-hero: radial-gradient(
+    1200px 520px at 50% -40px,
+    rgba(124, 252, 0, 0.1) 0%,
+    rgba(17, 24, 39, 0.3) 40%,
+    #0b0f17 90%
+  );
 }
 
 @layer base {

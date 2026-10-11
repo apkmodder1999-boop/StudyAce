@@ -12,15 +12,14 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
-import { TelegramModal, TelegramFloatingButton } from "@/components/TelegramModal";
 import { XPModal, XPEarnedToast } from "@/components/XPModal";
 import { EnrollmentToast } from "@/components/EnrollmentToast";
+import { UIColorPicker, UIColorPickerMobile } from "@/components/UIColorPicker";
 import { useXP } from "@/lib/xp-system";
 import { useEnrollment } from "@/lib/enrollment-system";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme();
-  const [isTelegramOpen, setIsTelegramOpen] = useState(false);
   const [isXpModalOpen, setIsXpModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { totalXp, levelInfo, isMounted } = useXP();
@@ -118,7 +117,9 @@ export function Shell({ children }: { children: ReactNode }) {
                   type="button"
                   onClick={() => {
                     setIsSidebarOpen(false);
-                    setIsXpModalOpen(true);
+                    setTimeout(() => {
+                      setIsXpModalOpen(true);
+                    }, 150);
                   }}
                   className="w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition cursor-pointer text-left"
                 >
@@ -134,33 +135,30 @@ export function Shell({ children }: { children: ReactNode }) {
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSidebarOpen(false);
-                    setIsTelegramOpen(true);
-                  }}
-                  className="w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition cursor-pointer text-left"
-                >
-                  <span className="text-base">✈️</span>
-                  <span>PW Community (Telegram)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleTheme();
-                  }}
-                  className="w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition cursor-pointer text-left"
+                {/* Direct Telegram Hyperlink (No Popup) */}
+                <a
+                  href="https://t.me/+7htXdqnvL0JiYjc1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted transition text-left cursor-pointer group"
+                  title="Join Official PW Telegram Channel"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-base">{isDark ? "☀️" : "🌙"}</span>
-                    <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+                    <span className="text-base">✈️</span>
+                    <span>PW Community (Telegram)</span>
                   </div>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {isDark ? "Active" : "Active"}
+                  <span className="text-xs font-bold text-primary flex items-center gap-0.5 group-hover:translate-x-0.5 transition">
+                    Join ↗
                   </span>
-                </button>
+                </a>
+
+                <div className="pt-2">
+                  <div className="px-1 pb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">
+                    Appearance & Colour
+                  </div>
+                  <UIColorPickerMobile />
+                </div>
               </div>
             </div>
           </div>
@@ -219,7 +217,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   Physics Wallah
                 </span>
                 <span
-                  className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#2563eb] text-white text-[9px] font-black"
+                  className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-black"
                   title="Official PW Portal"
                 >
                   ✓
@@ -228,11 +226,11 @@ export function Shell({ children }: { children: ReactNode }) {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <Link
               to="/"
               search={{ tab: "all" }}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition"
             >
               <span>Batches</span>
             </Link>
@@ -241,14 +239,14 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               to="/"
               search={{ tab: "enrolled" }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/60 px-3 py-1.5 text-xs font-bold text-[#2563eb] dark:text-blue-400 hover:bg-blue-100 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition cursor-pointer"
               title="View your enrolled study batches"
             >
               <BookmarkCheck className="h-3.5 w-3.5" />
               <span className="hidden xs:inline">My Batches</span>
               <span
                 suppressHydrationWarning
-                className="rounded-full bg-[#2563eb] text-white px-1.5 py-0.2 text-[10px] font-mono tabular-nums font-bold"
+                className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-mono tabular-nums font-bold"
               >
                 {isMounted ? enrolledCount : 0}
               </span>
@@ -258,7 +256,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setIsXpModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-muted transition cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1.5 text-xs font-bold text-foreground hover:bg-muted transition cursor-pointer shadow-2xs"
               title="PW XP & Level Status"
               suppressHydrationWarning
             >
@@ -268,21 +266,8 @@ export function Shell({ children }: { children: ReactNode }) {
               </span>
             </button>
 
-            {/* Dark Mode Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="grid h-[34px] w-[34px] place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer shadow-2xs"
-              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              suppressHydrationWarning
-            >
-              {isDark ? (
-                <Sun className="h-4 w-4 text-amber-400" />
-              ) : (
-                <Moon className="h-4 w-4 text-slate-600" />
-              )}
-            </button>
+            {/* UI Colour Options & Theme Switcher (Top Right Small Circle) */}
+            <UIColorPicker />
           </div>
         </div>
       </header>
@@ -321,11 +306,22 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* Real-Time Micro Toast when Batch Enrolled / Unenrolled */}
       <EnrollmentToast />
 
-      {/* Cool Telegram Channel Popup */}
-      <TelegramModal isOpen={isTelegramOpen} onClose={() => setIsTelegramOpen(false)} />
-
-      {/* Floating Bottom-Right Telegram Trigger */}
-      <TelegramFloatingButton onOpen={() => setIsTelegramOpen(true)} />
+      {/* Floating Bottom-Right Telegram Direct Hyperlink (No Popup) */}
+      <aside
+        aria-label="Telegram Community"
+        className="fixed bottom-5 right-5 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300"
+      >
+        <a
+          href="https://t.me/+7htXdqnvL0JiYjc1"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground shadow-md transition hover:scale-105 hover:border-primary/50 active:scale-95 cursor-pointer"
+          title="Join Official PW Telegram Channel"
+        >
+          <span className="text-sm">✈️</span>
+          <span>Community ↗</span>
+        </a>
+      </aside>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function XPModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md overflow-hidden p-0 border border-border bg-card shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-md overflow-hidden p-0 border border-border bg-card shadow-2xl rounded-2xl z-[100]">
         <DialogTitle className="sr-only">Physics Wallah (PW) XP & Student Level Status</DialogTitle>
 
         {/* Top Header Card */}
