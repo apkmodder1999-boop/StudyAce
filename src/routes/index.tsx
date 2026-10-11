@@ -1,25 +1,57 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Search,
-  Sparkles,
-  ArrowRight,
-  BookmarkCheck,
-  Check,
-  Plus,
-  BookOpen,
-  Calendar,
-  Layers,
-  GraduationCap,
-} from "lucide-react";
+import { Search, ChevronRight, BookmarkCheck, Check, Plus, BookOpen, X } from "lucide-react";
 import { fetchBatches, type Batch } from "@/lib/api";
-import { formatBatchDate, formatSimpleDate } from "@/lib/dates";
-import { Shell, PageTitle, Loading, ErrorBox, EmptyBox } from "@/components/shell";
+import { formatSimpleDate } from "@/lib/dates";
+import { Shell, Loading, ErrorBox } from "@/components/shell";
 import { useEnrollment, type EnrolledBatch } from "@/lib/enrollment-system";
 
 interface IndexSearch {
   tab?: "all" | "enrolled";
+}
+
+type CategoryFilter =
+  "all" | "neet" | "jee" | "class12" | "class11" | "class10" | "dropper" | "hinglish";
+
+const CATEGORY_CHIPS: { id: CategoryFilter; label: string }[] = [
+  { id: "all", label: "All Batches" },
+  { id: "neet", label: "NEET" },
+  { id: "jee", label: "JEE" },
+  { id: "class12", label: "Class 12th" },
+  { id: "class11", label: "Class 11th" },
+  { id: "class10", label: "Class 10th & 9th" },
+  { id: "dropper", label: "Dropper / Target" },
+  { id: "hinglish", label: "Hinglish" },
+];
+
+const BATCH_GRADIENTS = [
+  "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)", // Deep Indigo & Electric Blue
+  "linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #2563eb 100%)", // Royal PW Blue
+  "linear-gradient(135deg, #311b92 0%, #4a148c 50%, #7b1fa2 100%)", // Deep Purple Glow
+  "linear-gradient(135deg, #881337 0%, #9f1239 50%, #f43f5e 100%)", // Crimson Rose
+  "linear-gradient(135deg, #064e3b 0%, #047857 50%, #10b981 100%)", // Emerald Teal
+  "linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #f97316 100%)", // Solar Orange
+  "linear-gradient(135deg, #172554 0%, #1e40af 50%, #3b82f6 100%)", // Sapphire Spark
+];
+
+function getGradientForBatch(batchName: string) {
+  if (!batchName) return BATCH_GRADIENTS[0];
+  let hash = 0;
+  for (let i = 0; i < batchName.length; i++) {
+    hash = batchName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % BATCH_GRADIENTS.length;
+  return BATCH_GRADIENTS[idx];
+}
+
+function formatCount(num: number): string {
+  if (num === 0) return "0";
+  if (num >= 1000) {
+    const k = num / 1000;
+    return (Math.round(k * 10) / 10).toFixed(1) + " k";
+  }
+  return num.toString();
 }
 
 export const Route = createFileRoute("/")({
@@ -28,17 +60,20 @@ export const Route = createFileRoute("/")({
   }),
   head: () => ({
     meta: [
-      { title: "Study Ace — Premium Batches, Lectures & Study Material" },
+      { title: "Batches — Eduzex · Physics Wallah" },
       {
         name: "description",
         content:
-          "Browse study batches, stream video lectures, enroll in batches, and access chapter notes and DPPs instantly.",
+          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
       },
-      { property: "og:title", content: "Study Ace — Premium Batches, Lectures & Study Material" },
+      {
+        property: "og:title",
+        content: "Batches — Eduzex · Physics Wallah",
+      },
       {
         property: "og:description",
         content:
-          "Browse study batches, stream video lectures, enroll in batches, and access chapter notes and DPPs instantly.",
+          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
       },
     ],
   }),
@@ -51,6 +86,7 @@ function BatchesPage() {
 
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
 
   const { enrolledBatches, enrolledCount, isEnrolled, enroll, unenroll, isMounted } =
     useEnrollment();
@@ -64,16 +100,66 @@ function BatchesPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       setQuery(q);
-    }, 250);
+    }, 200);
     return () => clearTimeout(t);
   }, [q]);
 
   const batches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const all = data ?? [];
-    if (!needle) return all;
-    return all.filter((b) => (b.name + " " + (b.byName ?? "")).toLowerCase().includes(needle));
-  }, [data, query]);
+
+    let filtered = all;
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((b) => {
+        const text = `${b.name} ${b.byName ?? ""} ${b.class ?? ""} ${b.type ?? ""}`.toLowerCase();
+        if (selectedCategory === "neet") {
+          return text.includes("neet") || text.includes("yakeen") || text.includes("medical");
+        }
+        if (selectedCategory === "jee") {
+          return (
+            text.includes("jee") ||
+            text.includes("iit") ||
+            text.includes("prayas") ||
+            text.includes("arjuna") ||
+            text.includes("lakshya")
+          );
+        }
+        if (selectedCategory === "class12") {
+          return b.class === "12" || text.includes("12th") || text.includes("class 12");
+        }
+        if (selectedCategory === "class11") {
+          return b.class === "11" || text.includes("11th") || text.includes("class 11");
+        }
+        if (selectedCategory === "class10") {
+          return (
+            b.class === "10" ||
+            b.class === "9" ||
+            text.includes("10th") ||
+            text.includes("9th") ||
+            text.includes("foundation") ||
+            text.includes("udaan")
+          );
+        }
+        if (selectedCategory === "dropper") {
+          return (
+            text.includes("dropper") ||
+            text.includes("target") ||
+            text.includes("yakeen") ||
+            text.includes("prayas") ||
+            text.includes("repeater")
+          );
+        }
+        if (selectedCategory === "hinglish") {
+          return (b.language ?? "").toLowerCase().includes("hinglish") || text.includes("hinglish");
+        }
+        return true;
+      });
+    }
+
+    if (!needle) return filtered;
+    return filtered.filter((b) => (b.name + " " + (b.byName ?? "")).toLowerCase().includes(needle));
+  }, [data, query, selectedCategory]);
 
   const filteredEnrolled = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -105,438 +191,302 @@ function BatchesPage() {
 
   return (
     <Shell>
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-        <Sparkles className="h-3.5 w-3.5 text-sky-500" />
-        <span>Study Ace Learning Platform</span>
-      </div>
-
-      <PageTitle
-        title={tab === "enrolled" ? "My Enrolled Batches" : "Explore Batches"}
-        subtitle={
-          tab === "enrolled"
-            ? "Your active enrolled batches. Pick up right where you left off with full video lectures, notes, and DPPs."
-            : "Browse all completed and active study batches, stream video lectures, and access chapter notes."
-        }
-      />
-
-      {/* Primary Section Switcher Tabs */}
-      <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-sky-100 dark:border-slate-800 pb-3">
-        <button
-          type="button"
-          onClick={() => handleTabChange("all")}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
-            tab === "all"
-              ? "bg-sky-600 text-white shadow-sm shadow-sky-500/25"
-              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-750 hover:text-sky-600 dark:hover:text-sky-300"
-          }`}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          <span>All Batches</span>
-          {data && (
-            <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-semibold ${
-                tab === "all"
-                  ? "bg-sky-500/80 text-white"
-                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-              }`}
-            >
-              {data.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange("enrolled")}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
-            tab === "enrolled"
-              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-500/25"
-              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-slate-750 hover:text-emerald-700 dark:hover:text-emerald-300"
-          }`}
-        >
-          <BookmarkCheck className="h-3.5 w-3.5" />
-          <span>Enrolled Batches</span>
-          <span
-            suppressHydrationWarning
-            className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
-              tab === "enrolled"
-                ? "bg-emerald-500/80 text-white"
-                : "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300"
-            }`}
-          >
-            {isMounted ? enrolledCount : 0}
+      {/* SEARCH BAR (EXACT MATCH TO USER TEMPLATE) */}
+      <div className="mb-5 relative">
+        <div className="relative flex items-center w-full">
+          <span className="pointer-events-none absolute left-4 text-[#94a3b8]">
+            <Search className="h-[18px] w-[18px]" strokeWidth={2.5} />
           </span>
-        </button>
-      </div>
-
-      {/* Quick Access Enrolled Shelf (when on 'all' tab with active enrollments) */}
-      {tab === "all" && isMounted && enrolledBatches.length > 0 && (
-        <div className="mb-8 rounded-2xl border border-emerald-200/90 dark:border-emerald-900/60 bg-gradient-to-br from-emerald-50/70 via-sky-50/30 to-transparent dark:from-emerald-950/30 dark:via-slate-900 dark:to-transparent p-4 sm:p-5">
-          <div className="mb-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                <BookmarkCheck className="h-3.5 w-3.5" />
-              </span>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                My Enrolled Batches ({enrolledBatches.length})
-              </h2>
-            </div>
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search batches by name, exam (JEE, NEET), class..."
+            className="w-full py-[13px] pl-[46px] pr-[44px] text-[14.5px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 rounded-xl bg-card text-foreground outline-none shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:border-[#2563eb] focus:ring-3 focus:ring-[#2563eb]/15 transition-all"
+          />
+          {q && (
             <button
               type="button"
-              onClick={() => handleTabChange("enrolled")}
-              className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+              onClick={() => setQ("")}
+              className="absolute right-3.5 h-6 w-6 rounded-full bg-[#e2e8f0] dark:bg-slate-700 text-[#475569] dark:text-slate-200 flex items-center justify-center text-xs font-bold hover:bg-[#cbd5e1] transition cursor-pointer"
+              aria-label="Clear search"
             >
-              View All Enrolled →
+              ✕
             </button>
-          </div>
+          )}
+        </div>
+      </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {enrolledBatches.slice(0, 3).map((b) => (
-              <Link
-                key={b._id}
-                to="/batches/$batchId"
-                params={{ batchId: b._id }}
-                className="group flex items-center gap-3 rounded-xl border border-emerald-200/80 dark:border-emerald-900/60 bg-white dark:bg-slate-900 p-2.5 transition hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-sm"
+      {/* HEADING BAR WITH GREEN BOARD COUNT BADGE */}
+      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-[23px] font-extrabold tracking-[-0.03em] text-[#111827] dark:text-slate-100 flex items-center gap-2.5">
+            <span>{tab === "enrolled" ? "My Enrolled Batches" : "All Batches"}</span>
+            <span className="green-board">
+              {tab === "enrolled"
+                ? isMounted
+                  ? formatCount(filteredEnrolled.length)
+                  : "0"
+                : formatCount(batches.length)}
+            </span>
+          </h1>
+        </div>
+
+        {/* Tab Controls: All Batches / My Batches */}
+        <div className="inline-flex rounded-xl bg-muted p-1 border border-border shrink-0">
+          <button
+            type="button"
+            onClick={() => handleTabChange("all")}
+            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+              tab === "all"
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>All Batches</span>
+            {data && (
+              <span className="rounded-full bg-[#2563eb]/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-[#2563eb]">
+                {data.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("enrolled")}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+              tab === "enrolled"
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookmarkCheck className="h-3.5 w-3.5 text-[#2563eb]" />
+            <span>Enrolled</span>
+            <span
+              suppressHydrationWarning
+              className="rounded-full bg-[#2563eb]/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-[#2563eb]"
+            >
+              {isMounted ? enrolledCount : 0}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <span className="block text-[13px] text-[#64748b] font-medium -mt-1.5 mb-3.5">
+        {tab === "enrolled"
+          ? "Your active enrolled batches with full lecture access, notes and DPPs."
+          : `Showing active session batches with recorded lectures, handwritten notes & DPPs.`}
+      </span>
+
+      {/* QUICK FILTER CHIPS (MATCHING SCREENSHOT) */}
+      {tab === "all" && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-3.5 mb-3.5 scrollbar-none">
+          {CATEGORY_CHIPS.map((chip) => {
+            const active = selectedCategory === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setSelectedCategory(chip.id)}
+                className={`whitespace-nowrap px-4 py-[7px] rounded-[24px] text-[13px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                  active
+                    ? "bg-[#111827] text-white border-[#111827] shadow-[0_3px_8px_rgba(17,24,39,0.2)] dark:bg-blue-600 dark:border-blue-600"
+                    : "border border-[#cbd5e1] dark:border-slate-700 bg-card text-[#334155] dark:text-slate-300 hover:border-[#94a3b8] hover:bg-slate-50 dark:hover:bg-slate-800"
+                }`}
               >
-                {b.previewImage ? (
-                  <img
-                    src={b.previewImage}
-                    alt={b.name}
-                    className="h-12 w-12 rounded-lg object-cover bg-emerald-50 dark:bg-slate-800 flex-none"
-                  />
-                ) : (
-                  <div className="flex h-12 w-12 flex-none items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
-                    {b.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                    {b.name}
-                  </h3>
-                  <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
-                    {b.class ? `Class ${b.class} · ` : ""}
-                    {b.language ?? "Hinglish"}
-                  </p>
-                </div>
-                <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </div>
-              </Link>
-            ))}
-          </div>
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* Polished Search Bar */}
-      <div className="relative mb-6">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={
-            tab === "enrolled"
-              ? "Search within your enrolled batches…"
-              : "Search batches by name, class, faculty…"
-          }
-          className="w-full rounded-2xl border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-3.5 pl-11 pr-4 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs transition hover:border-sky-200 dark:hover:border-slate-700 focus:border-sky-400 dark:focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-950/50"
-        />
-      </div>
-
-      {/* Enrolled Batches View */}
-      {tab === "enrolled" && (
-        <section>
-          {isMounted && enrolledBatches.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-sky-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 p-8 sm:p-12 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-                <GraduationCap className="h-7 w-7" />
-              </div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                No Batches Enrolled Yet
-              </h2>
-              <p className="mx-auto mt-1.5 max-w-md text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                You haven't enrolled in any batches yet. Browse the catalog and tap{" "}
-                <strong className="text-slate-700 dark:text-slate-200">"+ Enroll"</strong> on any
-                batch to pin it to your personal learning dashboard for fast access.
-              </p>
-              <div className="mt-5">
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("all")}
-                  className="inline-flex items-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-sky-500/25 transition cursor-pointer"
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  <span>Browse All Batches</span>
-                </button>
+      {/* SKELETON / LOADING STATE */}
+      {isLoading && (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-[18px] border border-border bg-card overflow-hidden shadow-xs flex flex-col"
+            >
+              <div className="aspect-video w-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+                <div className="h-5 w-4/5 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+                <div className="h-4 w-3/5 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
               </div>
             </div>
-          ) : filteredEnrolled.length === 0 ? (
-            <EmptyBox message="No enrolled batches match your search filter." />
-          ) : (
-            <div>
-              <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>
-                  Showing{" "}
-                  <strong className="font-semibold text-slate-800 dark:text-slate-200">
-                    {filteredEnrolled.length}
-                  </strong>{" "}
-                  enrolled batches
-                </span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                  ✓ Instant Access
-                </span>
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                {filteredEnrolled.map((b) => (
-                  <Link
-                    key={b._id}
-                    to="/batches/$batchId"
-                    params={{ batchId: b._id }}
-                    className="group card-surface flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-900 border border-emerald-200/90 dark:border-emerald-900/60 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/10 dark:hover:shadow-none"
-                  >
-                    <div>
-                      {b.previewImage ? (
-                        <div className="relative h-44 w-full overflow-hidden bg-emerald-50 dark:bg-slate-800">
-                          <img
-                            src={b.previewImage}
-                            alt={`${b.name} batch cover`}
-                            loading="lazy"
-                            className="h-full w-full object-cover transition duration-300 group-hover:scale-102"
-                          />
-                          <div className="absolute left-3 top-3 rounded-md bg-emerald-600/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs flex items-center gap-1">
-                            <BookmarkCheck className="h-3 w-3" />
-                            <span>Enrolled</span>
-                          </div>
-                          {b.status && (
-                            <div className="absolute right-3 top-3 rounded-md bg-white/90 dark:bg-slate-900/90 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 shadow-sm backdrop-blur-xs">
-                              {b.status}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="relative h-44 w-full bg-gradient-to-br from-emerald-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-xl">
-                          <div className="absolute left-3 top-3 rounded-md bg-emerald-600/95 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm flex items-center gap-1">
-                            <BookmarkCheck className="h-3 w-3" />
-                            <span>Enrolled</span>
-                          </div>
-                          {b.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-
-                      <div className="p-5">
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          <span>{b.language ?? "Hinglish"}</span>
-                          {b.class && (
-                            <>
-                              <span className="text-slate-300 dark:text-slate-700">·</span>
-                              <span>Class {b.class}</span>
-                            </>
-                          )}
-                          {b.enrolledAt && (
-                            <>
-                              <span className="text-slate-300 dark:text-slate-700">·</span>
-                              <span
-                                suppressHydrationWarning
-                                className="text-emerald-700 dark:text-emerald-400 font-semibold"
-                              >
-                                Enrolled {formatSimpleDate(b.enrolledAt)}
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition leading-snug">
-                          {b.name}
-                        </h2>
-
-                        {b.byName && (
-                          <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {b.byName}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="border-t border-emerald-100 dark:border-slate-800 bg-emerald-50/20 dark:bg-slate-850/50 px-5 py-3.5 flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleEnroll(e, b, true)}
-                        className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
-                        title="Remove from your enrolled batches"
-                      >
-                        Unenroll
-                      </button>
-
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 transition">
-                        <span>Continue Learning</span>
-                        <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
+          ))}
+        </div>
       )}
 
-      {/* All Batches View */}
-      {tab === "all" && (
-        <section>
-          {isLoading && <Loading text="Loading batches list…" />}
-          {error && <ErrorBox message={(error as Error).message} />}
-          {!isLoading && !error && batches.length === 0 && <EmptyBox message="No batches found." />}
+      {error && <ErrorBox message={(error as Error).message} />}
 
-          {!isLoading && !error && batches.length > 0 && (
-            <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>
-                Showing{" "}
-                <strong className="font-semibold text-slate-800 dark:text-slate-200">
-                  {batches.length}
-                </strong>{" "}
-                batches
-              </span>
-            </div>
-          )}
+      {/* EMPTY STATE */}
+      {!isLoading &&
+        !error &&
+        (tab === "all" ? batches.length === 0 : filteredEnrolled.length === 0) && (
+          <div className="text-center py-16 px-5 bg-card border border-dashed border-[#cbd5e1] dark:border-slate-700 rounded-[18px] my-5">
+            <div className="text-4xl mb-3">⚠️</div>
+            <h3 className="text-lg font-extrabold text-[#111827] dark:text-slate-100 mb-1.5">
+              {tab === "enrolled" ? "No Enrolled Batches Found" : "No Batches Found"}
+            </h3>
+            <p className="text-[13.5px] text-[#64748b] mb-4 max-w-sm mx-auto">
+              {tab === "enrolled"
+                ? "Browse all batches and click 'Enroll Now' to save them here."
+                : "Try searching for terms like 'Arjuna', 'Lakshya', 'JEE', or 'NEET'."}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setQ("");
+                setSelectedCategory("all");
+                if (tab === "enrolled") handleTabChange("all");
+              }}
+              className="bg-[#2563eb] text-white px-5 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition cursor-pointer"
+            >
+              Reset Search
+            </button>
+          </div>
+        )}
 
-          {/* Batches Grid */}
-          <div className="grid gap-5 sm:grid-cols-2">
-            {batches.map((b) => {
-              const enrolled = isEnrolled(b._id);
+      {/* BATCHES GRID (MATCHING USER SCREENSHOT CARD FORMAT) */}
+      {!isLoading && !error && (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {(tab === "enrolled" ? filteredEnrolled : batches).map((b) => {
+            const enrolled = isEnrolled(b._id);
+            const category = b.class ? `Class ${b.class}` : b.type?.replace("_", " ") || "PW Batch";
+            const lang = b.language || "Hinglish";
+            const examName = b.byName || "Academic & Competitive";
+            const startDateText = b.startDate
+              ? `Started on ${b.startDate.split("T")[0]}`
+              : "Ongoing Session";
 
-              return (
-                <Link
-                  key={b._id}
-                  to="/batches/$batchId"
-                  params={{ batchId: b._id }}
-                  className={`group card-surface flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-900 border transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                    enrolled
-                      ? "border-emerald-300/80 dark:border-emerald-800/80 hover:border-emerald-400 hover:shadow-emerald-500/10"
-                      : "border-sky-100 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-sky-100 dark:hover:shadow-none"
-                  }`}
-                >
-                  <div>
-                    {b.previewImage ? (
-                      <div className="relative h-44 w-full overflow-hidden bg-sky-50 dark:bg-slate-800">
-                        <img
-                          src={b.previewImage}
-                          alt={`${b.name} batch cover`}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-102"
-                        />
-                        {/* Enrolled Badge on Top Left */}
-                        {enrolled && (
-                          <div className="absolute left-3 top-3 rounded-md bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm backdrop-blur-xs flex items-center gap-1">
-                            <BookmarkCheck className="h-3 w-3" />
-                            <span>Enrolled</span>
-                          </div>
-                        )}
-                        {b.status && (
-                          <div className="absolute right-3 top-3 rounded-md bg-white/90 dark:bg-slate-900/90 px-2 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300 shadow-sm backdrop-blur-xs">
-                            {b.status}
-                          </div>
-                        )}
+            return (
+              <article
+                key={b._id}
+                className="group rounded-[18px] border border-[#e2e8f0] dark:border-slate-800 bg-card overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-200 flex flex-col relative"
+              >
+                {/* Banner Area */}
+                <div className="relative w-full bg-[#0f172a] overflow-hidden rounded-t-[18px]">
+                  {b.previewImage ? (
+                    <img
+                      src={b.previewImage}
+                      alt={b.name}
+                      loading="lazy"
+                      className="w-full aspect-video object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div
+                      className="dynamic-batch-banner"
+                      style={{ background: getGradientForBatch(b.name) }}
+                    >
+                      <div className="relative z-10 flex items-center justify-between gap-1.5 mt-5">
+                        <span className="text-[10px] font-extrabold tracking-wider text-white bg-black/25 backdrop-blur-xs px-2 py-0.5 rounded-full uppercase border border-white/20">
+                          PHYSICS WALLAH
+                        </span>
+                        <span className="text-[#fde047] text-[11px] font-extrabold">
+                          ★ OFFICIAL
+                        </span>
                       </div>
-                    ) : (
-                      <div className="relative h-44 w-full bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-sky-600 dark:text-sky-400 font-bold text-xl">
-                        {enrolled && (
-                          <div className="absolute left-3 top-3 rounded-md bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm flex items-center gap-1">
-                            <BookmarkCheck className="h-3 w-3" />
-                            <span>Enrolled</span>
-                          </div>
-                        )}
-                        {b.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-
-                    <div className="p-5">
-                      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                        <span>{b.language ?? "Hinglish"}</span>
-                        {b.class && (
-                          <>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>Class {b.class}</span>
-                          </>
-                        )}
-                        {b.type && !b.class && (
-                          <>
-                            <span className="text-slate-300 dark:text-slate-700">·</span>
-                            <span>{(b.type ?? "").replace("_", " ")}</span>
-                          </>
-                        )}
-                      </div>
-
-                      <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition leading-snug">
-                        {b.name}
-                      </h2>
-
-                      {b.byName && (
-                        <p className="mt-1.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          {b.byName}
-                        </p>
-                      )}
-
-                      {(b.startDate || b.endDate) && (
-                        <p
-                          suppressHydrationWarning
-                          className="mt-3 text-xs text-slate-400 dark:text-slate-500 font-medium"
+                      <div className="relative z-10 my-auto py-1">
+                        <div
+                          className="text-[16px] font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] line-clamp-2"
+                          title={b.name}
                         >
-                          {b.startDate ? formatBatchDate(b.startDate) : ""}
-                          {b.endDate ? ` → ${formatBatchDate(b.endDate)}` : ""}
-                        </p>
-                      )}
+                          {b.name}
+                        </div>
+                      </div>
+                      <div className="relative z-10 flex items-center gap-1.5">
+                        <span className="text-[10px] font-extrabold text-white bg-white/22 backdrop-blur-xs px-2 py-0.5 rounded-[10px] border border-white/30 uppercase tracking-wide">
+                          ⚡ {category}
+                        </span>
+                      </div>
                     </div>
+                  )}
+
+                  {/* Banner Top Pill ("👑 Multiple plans inside" per screenshot) */}
+                  <div className="absolute top-2.5 left-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold text-[#1e293b] dark:text-slate-200 flex items-center gap-1.5 shadow-[0_2px_6px_rgba(0,0,0,0.1)]">
+                    <span className="text-[#eab308]">👑</span>
+                    <span>Multiple plans inside</span>
                   </div>
 
-                  <div className="border-t border-sky-100/80 dark:border-slate-800/80 bg-sky-50/30 dark:bg-slate-850/50 px-5 py-3.5 flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      {b.feeTotal ? (
-                        <span
-                          suppressHydrationWarning
-                          className="text-slate-400 dark:text-slate-500 line-through mr-1 font-normal"
-                        >
-                          ₹{b.feeTotal}
-                        </span>
-                      ) : null}
-                      FREE ACCESS
+                  {enrolled && (
+                    <div className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold text-[#2563eb] flex items-center gap-1 shadow-xs border border-blue-200 dark:border-blue-900">
+                      <BookmarkCheck className="h-3 w-3" />
+                      <span>Enrolled</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card Content */}
+                <div className="p-4 flex flex-col flex-1">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[12.5px] font-bold text-[#ea580c] uppercase tracking-[0.3px]">
+                      {category}
                     </span>
+                    <span className="text-[11px] font-extrabold text-[#334155] dark:text-slate-300 bg-[#f1f5f9] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 px-2 py-0.5 rounded-[6px] uppercase tracking-[0.5px]">
+                      {lang}
+                    </span>
+                  </div>
+
+                  <h2
+                    className="text-[16.5px] font-extrabold text-[#0f172a] dark:text-slate-100 leading-[1.35] mb-2.5 line-clamp-2 min-h-[44px]"
+                    title={b.name}
+                  >
+                    {b.name}
+                  </h2>
+
+                  <div className="flex items-center gap-1.5 text-[12.5px] text-[#64748b] mb-1.5 truncate">
+                    <span className="text-sm">📖</span>
+                    <span className="truncate">{examName}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[12.5px] text-[#64748b] mb-4">
+                    <span className="h-[7px] w-[7px] rounded-full bg-[#10b981] shrink-0" />
+                    <span>Ongoing | {startDateText}</span>
+                  </div>
+
+                  {/* Card Footer */}
+                  <div className="mt-auto pt-3.5 border-t border-[#f1f5f9] dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <div className="text-[18px] font-extrabold text-[#0f172a] dark:text-slate-100 flex items-baseline gap-1.5">
+                        <span>Free</span>
+                        <span className="text-[12px] font-semibold text-[#94a3b8] line-through">
+                          {b.feeTotal ? `₹${b.feeTotal}` : "₹1,999"}
+                        </span>
+                      </div>
+                      <span className="text-[11.5px] font-extrabold text-[#10b981]">100% OFF</span>
+                    </div>
 
                     <div className="flex items-center gap-2">
-                      {/* One-Click Enroll / Enrolled Button */}
                       <button
                         type="button"
                         onClick={(e) => handleToggleEnroll(e, b, enrolled)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer ${
+                        className={`px-4 py-2 rounded-[10px] text-[13.5px] font-bold font-inherit cursor-pointer flex items-center gap-1.5 transition-all ${
                           enrolled
-                            ? "border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600 dark:hover:bg-rose-950/40"
-                            : "border border-sky-200 dark:border-sky-800 bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-300 hover:bg-sky-600 hover:text-white hover:border-sky-600 dark:hover:bg-sky-600"
+                            ? "bg-slate-200 dark:bg-slate-700 text-[#0f172a] dark:text-slate-100 hover:bg-rose-100 hover:text-rose-600"
+                            : "bg-[#111827] dark:bg-blue-600 text-white hover:bg-[#1e293b] dark:hover:bg-blue-700 hover:scale-[1.02]"
                         }`}
-                        title={enrolled ? "Click to unenroll" : "Enroll in this batch"}
                       >
-                        {enrolled ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>Enrolled</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3.5 w-3.5" />
-                            <span>Enroll</span>
-                          </>
-                        )}
+                        {enrolled ? "Enrolled ✓" : "Enroll Now"}
                       </button>
 
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 group-hover:text-sky-700 dark:group-hover:text-sky-300 transition">
-                        <span>Explore</span>
-                        <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                      </span>
+                      <Link
+                        to="/batches/$batchId"
+                        params={{ batchId: b._id }}
+                        className="h-[38px] w-[38px] rounded-[10px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 bg-card text-[#111827] dark:text-slate-100 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#94a3b8] transition cursor-pointer"
+                        title="View Batch Details"
+                      >
+                        <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+                      </Link>
                     </div>
                   </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       )}
     </Shell>
   );

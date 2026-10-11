@@ -7,15 +7,16 @@ import { ArrowRight, BookOpen, Video, FileText, CheckCircle2 } from "lucide-reac
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/")({
   head: () => ({
     meta: [
-      { title: "Chapters & Topics — Study Ace" },
+      { title: "Chapters & Topics — Physics Wallah (PW)" },
       {
         name: "description",
-        content: "Chapter-wise topics with video lectures, notes, DPPs and tests.",
+        content:
+          "Chapter-wise topics with video lectures, notes, DPPs and tests on Physics Wallah.",
       },
-      { property: "og:title", content: "Chapters & Topics — Study Ace" },
+      { property: "og:title", content: "Chapters & Topics — Physics Wallah (PW)" },
       {
         property: "og:description",
-        content: "Open a chapter to watch lectures and access study materials.",
+        content: "Open a chapter to watch lectures and access study materials on Physics Wallah.",
       },
     ],
   }),
@@ -81,31 +82,31 @@ function SubjectPage() {
             to="/batches/$batchId/subject/$subjectId/topic/$topicId"
             params={{ batchId, subjectId, topicId: t._id }}
             search={{ name: t.name, slug: t.slug }}
-            className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none"
+            className="group card-surface flex items-center justify-between gap-4 p-4 bg-card border border-border transition hover:border-primary/50 hover:shadow-xs"
           >
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-sky-50 dark:bg-slate-800 text-xs font-bold text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-slate-700">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-muted text-xs font-bold text-foreground border border-border">
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
+                <h2 className="truncate text-sm font-bold text-foreground group-hover:text-primary transition">
                   {t.name}
                 </h2>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <Video className="h-3 w-3 text-sky-500" />
+                    <Video className="h-3 w-3 text-primary" />
                     <span>{t.videos ?? 0} lectures</span>
                   </span>
-                  <span className="text-slate-300 dark:text-slate-700">·</span>
+                  <span className="text-border">·</span>
                   <span className="flex items-center gap-1">
-                    <FileText className="h-3 w-3 text-slate-400" />
+                    <FileText className="h-3 w-3" />
                     <span>{t.notes ?? 0} notes</span>
                   </span>
                   {Boolean(t.exercises) && (
                     <>
-                      <span className="text-slate-300 dark:text-slate-700">·</span>
+                      <span className="text-border">·</span>
                       <span className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
                         <span>{t.exercises} DPPs</span>
                       </span>
                     </>
@@ -114,8 +115,8 @@ function SubjectPage() {
               </div>
             </div>
 
-            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 transition group-hover:bg-sky-600 group-hover:text-white">
-              <ArrowRight className="h-4 w-4" />
+            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-md bg-muted text-muted-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
+              <ArrowRight className="h-3.5 w-3.5" />
             </div>
           </Link>
         ))}

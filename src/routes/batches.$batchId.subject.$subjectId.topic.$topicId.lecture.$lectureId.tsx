@@ -45,15 +45,15 @@ export const Route = createFileRoute(
   }),
   head: () => ({
     meta: [
-      { title: "Watch Lecture — Study Ace" },
+      { title: "Watch Lecture — Physics Wallah (PW)" },
       {
         name: "description",
-        content: "Stream the video lecture in high-definition with Study Ace player.",
+        content: "Stream the video lecture in high-definition with official Physics Wallah player.",
       },
-      { property: "og:title", content: "Watch Lecture — Study Ace" },
+      { property: "og:title", content: "Watch Lecture — Physics Wallah (PW)" },
       {
         property: "og:description",
-        content: "Stream the video lecture in high-definition with Study Ace player.",
+        content: "Stream the video lecture in high-definition with official Physics Wallah player.",
       },
     ],
   }),
@@ -434,8 +434,8 @@ function LecturePlayerView({
     <div className="space-y-6">
       {/* Video Streaming Area */}
       {streamUrl ? (
-        <div className="card-surface overflow-hidden p-3 sm:p-5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-md shadow-sky-100/50 dark:shadow-none rounded-2xl">
-          <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-slate-950 shadow-lg group">
+        <div className="card-surface overflow-hidden p-3 sm:p-4 bg-card border border-border shadow-xs rounded-xl">
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black shadow-lg group">
             <video
               ref={videoRef}
               controls
@@ -481,10 +481,10 @@ function LecturePlayerView({
                     v.play().catch(() => {});
                   }
                 }}
-                className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-sky-600/95 hover:bg-sky-500 text-white shadow-2xl transition hover:scale-110 cursor-pointer pointer-events-auto"
+                className="absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/95 hover:bg-primary text-primary-foreground shadow-xl transition hover:scale-105 cursor-pointer pointer-events-auto"
                 aria-label="Play Lecture Video"
               >
-                <Play className="h-8 w-8 fill-current ml-1 text-white" />
+                <Play className="h-6 w-6 fill-current ml-0.5" />
               </button>
             )}
           </div>
@@ -492,13 +492,13 @@ function LecturePlayerView({
           {/* Quick Controls, Speed, Sleep Timer & Quality Selectors */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2.5 py-0.5 text-[11px] font-bold text-sky-700 dark:text-sky-300">
-                <Zap className="h-3 w-3 fill-current text-sky-500" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-[11px] font-semibold text-foreground">
+                <Zap className="h-3 w-3 text-primary fill-primary" />
                 {isDirectMp4 ? "Ultra-Fast Stream" : "High-Definition Stream"}
               </span>
 
               {duration && (
-                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                <span className="text-muted-foreground font-medium text-[11px]">
                   · Duration: {duration}
                 </span>
               )}
@@ -507,12 +507,12 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => setIsXpModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-muted transition cursor-pointer shadow-2xs"
                 title="PW XP: Earn 1 XP every 2 minutes of lecture watched"
               >
-                <Zap className="h-3 w-3 fill-current text-amber-500 animate-pulse" />
+                <Zap className="h-3 w-3 fill-amber-500 text-amber-500" />
                 <span>{totalXp} XP</span>
-                <span className="text-amber-600 dark:text-amber-400 font-mono text-[10px]">
+                <span className="text-muted-foreground font-mono text-[10px]">
                   ({Math.floor(unclaimedSeconds / 60)}m {unclaimedSeconds % 60}s / 2m)
                 </span>
               </button>
@@ -523,7 +523,7 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => handleSeek(-10)}
-                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 dark:border-slate-800 bg-sky-50/70 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300 transition hover:bg-sky-100 dark:hover:bg-slate-700 cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
                 title="Rewind 10 seconds"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -534,7 +534,7 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => handleSeek(10)}
-                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 dark:border-slate-800 bg-sky-50/70 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-sky-800 dark:text-sky-300 transition hover:bg-sky-100 dark:hover:bg-slate-700 cursor-pointer"
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
                 title="Forward 10 seconds"
               >
                 <RotateCw className="h-3 w-3" />
@@ -545,10 +545,10 @@ function LecturePlayerView({
               <button
                 type="button"
                 onClick={() => setIsSleepModalOpen(true)}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
                   sleepTimerRemaining !== null && sleepTimerRemaining > 0
-                    ? "border-indigo-400 bg-indigo-500 text-white shadow-xs"
-                    : "border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+                    ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
                 title="Set lecture sleep timer"
               >
@@ -566,9 +566,7 @@ function LecturePlayerView({
 
               {/* Playback Speed Selectors */}
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium mr-0.5">
-                  Speed:
-                </span>
+                <span className="text-muted-foreground text-[11px] font-medium mr-0.5">Speed:</span>
                 {[0.75, 1, 1.25, 1.5, 2].map((s) => (
                   <button
                     key={s}
@@ -577,10 +575,10 @@ function LecturePlayerView({
                       setPlaybackSpeed(s);
                       if (videoRef.current) videoRef.current.playbackRate = s;
                     }}
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
                       playbackSpeed === s
-                        ? "bg-sky-600 text-white shadow-xs"
-                        : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
                     {s}x
@@ -590,8 +588,8 @@ function LecturePlayerView({
 
               {/* Multiple Quality Playback Selectors */}
               <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-slate-400 dark:text-slate-500 text-[11px] font-medium flex items-center gap-1 mr-0.5">
-                  <Sliders className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 mr-0.5">
+                  <Sliders className="h-3 w-3 text-primary" />
                   <span>Quality:</span>
                 </span>
                 {qualities.length > 0
@@ -600,10 +598,10 @@ function LecturePlayerView({
                         key={q.levelIndex}
                         type="button"
                         onClick={() => handleQualityChange(q.levelIndex)}
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
                           currentQualityIndex === q.levelIndex
-                            ? "bg-sky-600 text-white shadow-xs"
-                            : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+                            ? "bg-primary text-primary-foreground shadow-2xs"
+                            : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         {q.label}
@@ -619,10 +617,10 @@ function LecturePlayerView({
                         key={q.label}
                         type="button"
                         onClick={() => setCurrentQualityIndex(q.idx)}
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-bold transition cursor-pointer ${
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
                           currentQualityIndex === q.idx
-                            ? "bg-sky-600 text-white shadow-xs"
-                            : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300"
+                            ? "bg-primary text-primary-foreground shadow-2xs"
+                            : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         {q.label}
@@ -634,16 +632,14 @@ function LecturePlayerView({
         </div>
       ) : (
         /* While loading/resolving, shows Loading lecture */
-        <div className="card-surface p-12 text-center border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
-          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-700">
-            <Loader2 className="h-6 w-6 animate-spin text-sky-600 dark:text-sky-400" />
+        <div className="card-surface p-12 text-center border border-border bg-card rounded-xl">
+          <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-xl bg-muted text-primary">
+            <Loader2 className="h-5 w-5 animate-spin" />
           </div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-            Loading lecture…
-          </h2>
+          <h2 className="text-sm font-bold text-foreground">Loading lecture…</h2>
           <p
             suppressHydrationWarning
-            className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto"
+            className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto"
           >
             {item.startTime
               ? `Session scheduled for ${formatSimpleDate(item.startTime)}. Video stream will be available soon.`
@@ -653,13 +649,11 @@ function LecturePlayerView({
       )}
 
       {/* Title & Chapter Details */}
-      <div className="card-surface p-5 sm:p-6 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm rounded-2xl">
+      <div className="card-surface p-4 sm:p-5 bg-card border border-border shadow-2xs rounded-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
-              {title}
-            </h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <h1 className="text-base sm:text-lg font-bold text-foreground leading-snug">{title}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-medium">
               {duration && <span>{duration}</span>}
               {item.startTime && (
                 <span suppressHydrationWarning>
@@ -667,7 +661,7 @@ function LecturePlayerView({
                 </span>
               )}
               {item.status && (
-                <span className="rounded bg-sky-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-slate-700">
+                <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border">
                   {item.status}
                 </span>
               )}
@@ -679,9 +673,9 @@ function LecturePlayerView({
               to="/batches/$batchId/subject/$subjectId/topic/$topicId"
               params={{ batchId, subjectId, topicId }}
               search={{ name: undefined, slug: undefined }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-muted"
             >
-              <ArrowLeft className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+              <ArrowLeft className="h-3.5 w-3.5 text-primary" />
               <span>Back to Chapter</span>
             </Link>
           </div>
@@ -690,26 +684,24 @@ function LecturePlayerView({
 
       {/* Attachments Section (Notes, DPPs) - In-app viewer only */}
       {files.length > 0 && (
-        <div className="card-surface p-5 sm:p-6 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 shadow-sm rounded-2xl">
-          <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold text-sm mb-4">
-            <FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+        <div className="card-surface p-4 sm:p-5 bg-card border border-border shadow-2xs rounded-xl">
+          <div className="flex items-center gap-2 text-foreground font-bold text-sm mb-3">
+            <FileText className="h-4 w-4 text-primary" />
             <span>Lecture Notes & Attached PDFs ({files.length})</span>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {files.map((file, i) => (
               <div
                 key={`${file.url}-${i}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-sky-100 dark:border-slate-800 bg-sky-50/30 dark:bg-slate-800/40 p-3.5 transition hover:border-sky-300 dark:hover:border-sky-700 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3 transition hover:border-primary/50 hover:bg-card"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-muted text-primary">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
-                      {file.name}
-                    </p>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                    <p className="truncate text-xs font-semibold text-foreground">{file.name}</p>
+                    <span className="text-[10px] text-muted-foreground font-medium">
                       PDF Document
                     </span>
                   </div>
@@ -717,7 +709,7 @@ function LecturePlayerView({
                 <button
                   type="button"
                   onClick={() => onPreviewPdf(file)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs transition hover:bg-sky-700 cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-2xs transition hover:bg-primary/90 cursor-pointer"
                 >
                   <Eye className="h-3 w-3" />
                   <span>View PDF</span>

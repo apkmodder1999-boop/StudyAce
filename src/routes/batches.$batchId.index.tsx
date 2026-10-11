@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { fetchBatchDetails, subjectImage, getBatchImageUrl } from "@/lib/api";
-import { Shell, PageTitle, Crumbs, Loading, ErrorBox, EmptyBox } from "@/components/shell";
+import { Shell, Crumbs, Loading, ErrorBox, EmptyBox } from "@/components/shell";
 import {
   BookOpen,
   Search,
@@ -11,22 +11,30 @@ import {
   BookmarkCheck,
   Check,
   Plus,
-  Sparkles,
+  Calendar,
+  Share2,
+  Award,
+  Video,
+  FileText,
+  Info,
 } from "lucide-react";
+import { formatBatchDate } from "@/lib/dates";
 import { useEnrollment } from "@/lib/enrollment-system";
 
 export const Route = createFileRoute("/batches/$batchId/")({
   head: () => ({
     meta: [
-      { title: "Batch Subjects — Study Ace" },
+      { title: "Batch Subjects — Physics Wallah (PW)" },
       {
         name: "description",
-        content: "Explore all subjects, chapters, lectures, and DPP materials inside this batch.",
+        content:
+          "Explore all subjects, chapters, lectures, and DPP materials inside this official Physics Wallah batch.",
       },
-      { property: "og:title", content: "Batch Subjects — Study Ace" },
+      { property: "og:title", content: "Batch Subjects — Physics Wallah (PW)" },
       {
         property: "og:description",
-        content: "Explore all subjects, chapters, lectures, and DPP materials inside this batch.",
+        content:
+          "Explore all subjects, chapters, lectures, and DPP materials inside this official Physics Wallah batch.",
       },
     ],
   }),
@@ -36,6 +44,7 @@ export const Route = createFileRoute("/batches/$batchId/")({
 function BatchPage() {
   const { batchId } = Route.useParams();
   const [filter, setFilter] = useState("");
+  const [activeTab, setActiveTab] = useState<"classes" | "about" | "notices">("classes");
   const { isEnrolled, enroll, unenroll } = useEnrollment();
 
   const { data, isLoading, error } = useQuery({
@@ -52,178 +61,293 @@ function BatchPage() {
     return allSubjects.filter((s) => s.subject?.toLowerCase().includes(q));
   }, [allSubjects, filter]);
 
+  const previewImg = data ? getBatchImageUrl(data.previewImage) : undefined;
+
   return (
     <Shell>
+      {/* PW Breadcrumbs */}
       <Crumbs
         items={[
           {
             label: "Batches",
             to: (
-              <Link to="/" search={{ tab: "all" }} className="hover:text-sky-600 transition">
+              <Link to="/" search={{ tab: "all" }} className="hover:text-foreground transition">
                 Batches
               </Link>
             ),
           },
-          { label: data?.name ?? "Batch" },
+          { label: data?.name ?? "Batch Details" },
         ]}
       />
 
-      <PageTitle
-        title={data?.name ?? "Batch Subjects"}
-        subtitle={
-          data?.byName ??
-          "Select a subject below to explore chapters, watch video lectures, and access study materials."
-        }
-      >
-        {data && (
-          <div className="flex items-center gap-2">
-            {enrolled ? (
-              <button
-                type="button"
-                onClick={() => unenroll(batchId)}
-                className="group inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-200 transition hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 shadow-2xs cursor-pointer"
-                title="Click to unenroll from this batch"
-              >
-                <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 group-hover:hidden" />
-                <span className="group-hover:hidden">Enrolled</span>
-                <span className="hidden group-hover:inline">Unenroll</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  enroll({
-                    _id: batchId,
-                    name: data.name,
-                    byName: data.byName,
-                    startDate: data.startDate,
-                    endDate: data.endDate,
-                    previewImage: getBatchImageUrl(data.previewImage),
-                  })
-                }
-                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 active:bg-sky-700 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:shadow-sky-500/25 cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Enroll in Batch</span>
-              </button>
-            )}
-          </div>
-        )}
-      </PageTitle>
-
-      {/* Enrolled Status Banner */}
-      {!isLoading && !error && enrolled && (
-        <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-3.5 sm:px-4 text-xs">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-emerald-500 text-white shadow-2xs">
-              <BookmarkCheck className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="font-bold text-emerald-900 dark:text-emerald-200">
-                You are enrolled in this batch!
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 text-[11px] truncate">
-                Pinned to your My Batches dashboard. All {allSubjects.length} subjects and study
-                materials are active.
-              </p>
-            </div>
-          </div>
-          <span className="hidden sm:inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 shrink-0 text-[11px]">
-            <Sparkles className="h-3 w-3" />
-            Active Learning
-          </span>
-        </div>
-      )}
-
-      {isLoading && <Loading text="Loading batch subjects…" />}
+      {isLoading && <Loading text="Loading official PW batch details…" />}
       {error && <ErrorBox message={(error as Error).message} />}
 
-      {!isLoading && !error && (
+      {!isLoading && !error && data && (
         <div className="space-y-6">
-          {/* Subjects Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-sky-100 pb-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
-                <BookOpen className="h-4 w-4" />
-              </span>
-              <span className="text-sm font-bold text-slate-800">
-                Subjects Available ({allSubjects.length})
-              </span>
-            </div>
+          {/* Official PW Batch Hero Header Banner */}
+          <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 sm:p-8 shadow-xs">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              {/* Left Column: Info & Details */}
+              <div className="flex-1 space-y-3.5">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="rounded-md bg-slate-950 text-white px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide uppercase">
+                    PW OFFICIAL BATCH
+                  </span>
+                  <span className="rounded-md bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold">
+                    {data.language ?? "Hinglish"}
+                  </span>
+                  {data.class && (
+                    <span className="rounded-md bg-muted text-foreground px-2.5 py-0.5 text-[10px] font-semibold">
+                      Class {data.class}
+                    </span>
+                  )}
+                  <span className="rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold">
+                    ✓ 100% FREE PASS
+                  </span>
+                </div>
 
-            {allSubjects.length > 3 && (
-              <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                <input
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filter subjects…"
-                  className="w-full rounded-xl border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs focus:border-sky-300 dark:focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:focus:ring-sky-950"
-                />
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                  {data.name}
+                </h1>
+
+                {data.byName && (
+                  <p className="text-sm text-muted-foreground font-medium flex items-center gap-1.5">
+                    <Award className="h-4 w-4 text-amber-500" />
+                    <span>Faculty: {data.byName}</span>
+                  </p>
+                )}
+
+                {(data.startDate || data.endDate) && (
+                  <p
+                    suppressHydrationWarning
+                    className="text-xs text-muted-foreground flex items-center gap-1.5 font-mono"
+                  >
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>
+                      Starts {data.startDate ? formatBatchDate(data.startDate) : "Available Now"}
+                      {data.endDate ? ` • Ends ${formatBatchDate(data.endDate)}` : ""}
+                    </span>
+                  </p>
+                )}
+
+                {/* Primary CTA Buttons */}
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  {enrolled ? (
+                    <button
+                      type="button"
+                      onClick={() => unenroll(batchId)}
+                      className="group inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold text-foreground transition hover:border-destructive hover:text-destructive cursor-pointer shadow-xs"
+                      title="Click to unenroll from this batch"
+                    >
+                      <Check className="h-4 w-4 text-primary group-hover:hidden" />
+                      <span className="group-hover:hidden">Enrolled in Batch ✓</span>
+                      <span className="hidden group-hover:inline">Unenroll</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        enroll({
+                          _id: batchId,
+                          name: data.name,
+                          byName: data.byName,
+                          startDate: data.startDate,
+                          endDate: data.endDate,
+                          previewImage: previewImg,
+                        })
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary/90 px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-md transition cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Enroll in Batch (Free)</span>
+                    </button>
+                  )}
+
+                  <span className="text-xs text-muted-foreground">
+                    Includes all {allSubjects.length} subjects & study materials
+                  </span>
+                </div>
               </div>
-            )}
+
+              {/* Right Column: Batch Poster */}
+              {previewImg && (
+                <div className="w-full sm:w-72 lg:w-80 shrink-0 aspect-video rounded-xl overflow-hidden border border-border bg-muted shadow-sm">
+                  <img src={previewImg} alt={data.name} className="h-full w-full object-cover" />
+                </div>
+              )}
+            </div>
           </div>
 
-          {filteredSubjects.length === 0 && <EmptyBox message="No subjects found in this batch." />}
+          {/* Official PW Batch Tabs: "All Classes", "About Batch", "Notices" */}
+          <div className="border-b border-border">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("classes")}
+                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                  activeTab === "classes"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All Classes ({allSubjects.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("about")}
+                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                  activeTab === "about"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Batch Overview
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("notices")}
+                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                  activeTab === "notices"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Notices & Updates
+              </button>
+            </div>
+          </div>
 
-          {/* Subjects Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSubjects.map((s) => {
-              const img = subjectImage(s);
-              const teacher = s.teacherIds?.[0];
-              const teacherName =
-                typeof teacher === "string"
-                  ? teacher
-                  : teacher?.firstName
-                    ? `${teacher.firstName} ${teacher.lastName ?? ""}`.trim()
-                    : undefined;
+          {/* TAB 1: ALL CLASSES / SUBJECTS */}
+          {activeTab === "classes" && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold text-foreground">
+                    Subjects Included in this Batch ({allSubjects.length})
+                  </h2>
+                </div>
 
-              return (
-                <Link
-                  key={s._id}
-                  to="/batches/$batchId/subject/$subjectId"
-                  params={{ batchId, subjectId: s._id }}
-                  className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition hover:-translate-y-0.5 hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {img ? (
-                      <img
-                        src={img}
-                        alt={s.subject}
-                        loading="lazy"
-                        className="h-13 w-13 rounded-xl object-cover bg-sky-50 dark:bg-slate-800 flex-none border border-sky-100 dark:border-slate-800"
-                      />
-                    ) : (
-                      <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 border border-sky-100 dark:border-slate-800 text-sky-700 dark:text-sky-400 font-bold text-base">
-                        {s.subject?.[0] ?? "S"}
+                {allSubjects.length > 2 && (
+                  <div className="relative w-full sm:w-64">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                      placeholder="Filter subjects…"
+                      className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {filteredSubjects.length === 0 && (
+                <EmptyBox message="No subjects found in this batch." />
+              )}
+
+              {/* PW Subject Cards Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredSubjects.map((s) => {
+                  const img = subjectImage(s);
+                  const teacher = s.teacherIds?.[0];
+                  const teacherName =
+                    typeof teacher === "string"
+                      ? teacher
+                      : teacher?.firstName
+                        ? `${teacher.firstName} ${teacher.lastName ?? ""}`.trim()
+                        : undefined;
+
+                  return (
+                    <Link
+                      key={s._id}
+                      to="/batches/$batchId/subject/$subjectId"
+                      params={{ batchId, subjectId: s._id }}
+                      className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-border transition hover:border-primary/50 hover:shadow-xs rounded-2xl"
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={s.subject}
+                            loading="lazy"
+                            className="h-13 w-13 rounded-xl object-cover bg-muted flex-none border border-border"
+                          />
+                        ) : (
+                          <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-slate-950 text-white border border-border font-bold text-base">
+                            {s.subject?.[0] ?? "S"}
+                          </div>
+                        )}
+
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-bold text-foreground group-hover:text-primary transition">
+                            {s.subject}
+                          </h3>
+                          {teacherName ? (
+                            <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground font-medium">
+                              <User className="h-3 w-3 text-muted-foreground flex-none" />
+                              <span className="truncate">{teacherName}</span>
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Chapter lectures & notes
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
-                        {s.subject}
-                      </h2>
-                      {teacherName && (
-                        <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500 dark:text-slate-400 font-medium">
-                          <User className="h-3 w-3 text-slate-400 dark:text-slate-500 flex-none" />
-                          <span className="truncate">{teacherName}</span>
-                        </p>
-                      )}
-                      {!teacherName && (
-                        <p className="mt-1 text-[11px] text-sky-600 dark:text-sky-400 font-medium">
-                          Tap to view chapters
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                      <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-muted text-muted-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-                  <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 transition group-hover:bg-sky-600 group-hover:text-white">
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          {/* TAB 2: ABOUT BATCH */}
+          {activeTab === "about" && (
+            <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+              <h2 className="text-base font-bold text-foreground">About this Course</h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {data.description ||
+                  "This batch provides a complete structured curriculum designed by Physics Wallah's top educators. Features complete syllabus coverage with concept clarity, practice problem sessions, chapter-wise notes and assignments."}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3 pt-2">
+                <div className="rounded-xl border border-border bg-background p-3.5">
+                  <span className="text-[11px] text-muted-foreground">Mode</span>
+                  <p className="text-xs font-bold text-foreground mt-0.5">
+                    Online (Recorded + Live)
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-background p-3.5">
+                  <span className="text-[11px] text-muted-foreground">Medium</span>
+                  <p className="text-xs font-bold text-foreground mt-0.5">
+                    {data.language ?? "Hinglish"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-background p-3.5">
+                  <span className="text-[11px] text-muted-foreground">Class Target</span>
+                  <p className="text-xs font-bold text-foreground mt-0.5">
+                    {data.class ? `Class ${data.class}` : "Competitive Exams"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: NOTICES */}
+          {activeTab === "notices" && (
+            <div className="rounded-2xl border border-border bg-card p-6 text-center">
+              <Info className="h-8 w-8 text-primary mx-auto mb-2" />
+              <h3 className="text-sm font-bold text-foreground">Official Batch Notices</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                All classes, DPPs, and chapter notes are available on time. Keep checking for
+                updates!
+              </p>
+            </div>
+          )}
         </div>
       )}
     </Shell>

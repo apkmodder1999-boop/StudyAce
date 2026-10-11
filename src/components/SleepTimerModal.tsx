@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Moon, Clock, Play, X, Plus, AlertCircle, Check } from "lucide-react";
+import { Moon, Clock, Play, X, Plus, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 export interface SleepTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeRemainingSeconds: number | null; // null if no timer active
+  activeRemainingSeconds: number | null;
   onSetTimer: (seconds: number) => void;
   onCancelTimer: () => void;
   videoDurationSeconds?: number;
@@ -31,7 +31,6 @@ export function SleepTimerModal({
     { label: "90 Minutes", minutes: 90 },
   ];
 
-  // Remaining time in the current lecture
   const endOfVideoSeconds = Math.max(0, Math.floor(videoDurationSeconds - currentVideoTime));
   const endOfVideoMins = Math.ceil(endOfVideoSeconds / 60);
 
@@ -52,46 +51,45 @@ export function SleepTimerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md overflow-hidden p-0 border border-indigo-200 dark:border-indigo-950 bg-white dark:bg-slate-900 shadow-2xl rounded-3xl">
+      <DialogContent className="max-w-md overflow-hidden p-0 border border-border bg-card shadow-2xl rounded-2xl">
         <DialogTitle className="sr-only">Video Lecture Sleep Timer</DialogTitle>
 
         {/* Top Header Card */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 px-6 pt-7 pb-6 text-white">
-          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-indigo-400/20 blur-xl pointer-events-none" />
-
+        <div className="relative bg-muted/50 p-6 pb-5 border-b border-border">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-full bg-black/20 text-white/90 hover:bg-black/35 hover:text-white transition cursor-pointer"
+            className="absolute top-4 right-4 grid h-7 w-7 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
 
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="mb-2.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-indigo-200 shadow-inner">
-              <Moon className="h-7 w-7 fill-current" />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-card border border-border text-foreground shadow-xs">
+              <Moon className="h-6 w-6 fill-current text-primary" />
             </div>
-
-            <h3 className="text-xl font-extrabold tracking-tight text-white">
-              Lecture Sleep Timer
-            </h3>
-            <p className="mt-1 text-xs text-indigo-200 max-w-xs font-medium">
-              Automatically pauses lecture playback after your selected duration
-            </p>
+            <div>
+              <h3 className="text-base font-bold tracking-tight text-foreground">
+                Lecture Sleep Timer
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Automatically pauses lecture playback after selected time
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4">
           {/* Active Timer Display if Running */}
           {activeRemainingSeconds !== null && activeRemainingSeconds > 0 && (
-            <div className="rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-950/40 p-4 text-center space-y-3">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                <Clock className="h-3.5 w-3.5 animate-spin" />
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-center space-y-2.5">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                <Clock className="h-3.5 w-3.5" />
                 <span>Timer Active</span>
               </span>
 
-              <div className="text-3xl font-black font-mono tracking-tight text-indigo-900 dark:text-indigo-100">
+              <div className="text-3xl font-bold font-mono tracking-tight text-foreground">
                 {formatCountdown(activeRemainingSeconds)}
               </div>
 
@@ -99,7 +97,7 @@ export function SleepTimerModal({
                 <button
                   type="button"
                   onClick={() => onSetTimer(activeRemainingSeconds + 5 * 60)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted cursor-pointer shadow-2xs"
                 >
                   <Plus className="h-3 w-3" />
                   <span>5 mins</span>
@@ -107,7 +105,7 @@ export function SleepTimerModal({
                 <button
                   type="button"
                   onClick={() => onSetTimer(activeRemainingSeconds + 15 * 60)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-700 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted cursor-pointer shadow-2xs"
                 >
                   <Plus className="h-3 w-3" />
                   <span>15 mins</span>
@@ -118,7 +116,7 @@ export function SleepTimerModal({
                     onCancelTimer();
                     onClose();
                   }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 cursor-pointer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/20 cursor-pointer"
                 >
                   <span>Turn Off</span>
                 </button>
@@ -128,9 +126,7 @@ export function SleepTimerModal({
 
           {/* Quick Presets Grid */}
           <div className="space-y-2">
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Quick Timer Presets
-            </p>
+            <p className="text-xs font-bold text-foreground">Quick Timer Presets</p>
             <div className="grid grid-cols-2 gap-2">
               {presets.map((p) => {
                 const isSelected =
@@ -144,17 +140,17 @@ export function SleepTimerModal({
                       onSetTimer(p.minutes * 60);
                       onClose();
                     }}
-                    className={`flex items-center justify-between rounded-xl border p-3 text-xs font-bold transition cursor-pointer ${
+                    className={`flex items-center justify-between rounded-lg border p-2.5 text-xs font-semibold transition cursor-pointer ${
                       isSelected
-                        ? "border-indigo-500 bg-indigo-500 text-white shadow-sm"
-                        : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-white dark:hover:bg-slate-800"
+                        ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                        : "border-border bg-card text-foreground hover:bg-muted"
                     }`}
                   >
                     <span>{p.label}</span>
                     {isSelected ? (
-                      <Check className="h-3.5 w-3.5 text-white" />
+                      <Check className="h-3.5 w-3.5" />
                     ) : (
-                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                   </button>
                 );
@@ -168,13 +164,13 @@ export function SleepTimerModal({
                     onSetTimer(endOfVideoSeconds);
                     onClose();
                   }}
-                  className="col-span-2 flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-indigo-50/30 dark:bg-slate-800/30 p-3 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/70 transition cursor-pointer"
+                  className="col-span-2 flex items-center justify-between rounded-lg border border-border bg-muted/30 p-2.5 text-xs font-semibold text-foreground hover:bg-muted transition cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <Play className="h-3.5 w-3.5 text-indigo-500" />
-                    <span>End of Current Video</span>
+                    <Play className="h-3.5 w-3.5 text-primary" />
+                    <span>End of Current Lecture</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
+                  <span className="text-[11px] text-muted-foreground font-normal">
                     ~{endOfVideoMins} min{endOfVideoMins === 1 ? "" : "s"} left
                   </span>
                 </button>
@@ -183,11 +179,8 @@ export function SleepTimerModal({
           </div>
 
           {/* Custom Minute Input */}
-          <form
-            onSubmit={handleApplyCustom}
-            className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800"
-          >
-            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Custom Duration</p>
+          <form onSubmit={handleApplyCustom} className="space-y-2 pt-2 border-t border-border">
+            <p className="text-xs font-bold text-foreground">Custom Duration</p>
             <div className="flex gap-2">
               <input
                 type="number"
@@ -195,13 +188,13 @@ export function SleepTimerModal({
                 max="360"
                 value={customMins}
                 onChange={(e) => setCustomMins(e.target.value)}
-                placeholder="Enter minutes (e.g. 20)"
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-950"
+                placeholder="Minutes (e.g. 20)"
+                className="w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 type="submit"
                 disabled={!customMins || parseInt(customMins, 10) <= 0}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs transition hover:bg-primary/90 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 Set
               </button>
@@ -224,33 +217,33 @@ export function SleepTimerTriggeredOverlay({
   return (
     <aside
       aria-label="Sleep timer paused playback"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-500"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300"
     >
-      <div className="relative max-w-sm w-full rounded-3xl border border-indigo-900 bg-slate-950 p-6 text-center text-white shadow-2xl space-y-4">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-          <Moon className="h-8 w-8 fill-current animate-pulse" />
+      <div className="relative max-w-sm w-full rounded-2xl border border-border bg-card p-6 text-center text-foreground shadow-2xl space-y-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Moon className="h-7 w-7 fill-current" />
         </div>
 
         <div>
-          <h4 className="text-lg font-black tracking-tight text-white">Sleep Timer Paused</h4>
-          <p className="mt-1.5 text-xs text-indigo-200 leading-relaxed">
+          <h4 className="text-base font-bold tracking-tight text-foreground">Sleep Timer Paused</h4>
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
             Your lecture was paused so you can rest comfortably without losing your place.
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="flex flex-col gap-2 pt-1">
           <button
             type="button"
             onClick={onResume}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-3 text-xs font-bold text-white shadow-lg transition hover:brightness-110 cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-2xs transition hover:bg-primary/90 cursor-pointer"
           >
-            <Play className="h-4 w-4 fill-current" />
+            <Play className="h-3.5 w-3.5 fill-current" />
             <span>Resume Lecture</span>
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 cursor-pointer"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-muted cursor-pointer"
           >
             Close
           </button>

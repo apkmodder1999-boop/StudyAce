@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, BookmarkX, Sparkles } from "lucide-react";
+import { CheckCircle2, BookmarkX } from "lucide-react";
 
 interface ToastData {
   id: number;
@@ -43,36 +43,23 @@ export function EnrollmentToast() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`pointer-events-auto flex items-center gap-3 rounded-xl border p-3.5 shadow-lg backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${
-            toast.action === "enrolled"
-              ? "border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/95 dark:bg-emerald-950/90 text-emerald-900 dark:text-emerald-100"
-              : "border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100"
-          }`}
+          className="pointer-events-auto flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-lg backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 text-foreground"
         >
           {toast.action === "enrolled" ? (
-            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-emerald-500 text-white shadow-xs">
+            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs">
               <CheckCircle2 className="h-4 w-4" />
             </div>
           ) : (
-            <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-muted text-muted-foreground">
               <BookmarkX className="h-4 w-4" />
             </div>
           )}
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-xs font-bold">
-              {toast.action === "enrolled" ? (
-                <>
-                  <span className="text-emerald-700 dark:text-emerald-300">Batch Enrolled!</span>
-                  <Sparkles className="h-3 w-3 text-emerald-500" />
-                </>
-              ) : (
-                <span className="text-slate-600 dark:text-slate-300">Unenrolled</span>
-              )}
-            </div>
-            <p className="truncate text-xs font-medium text-slate-600 dark:text-slate-300">
-              {toast.batchName}
+            <p className="text-xs font-semibold text-foreground">
+              {toast.action === "enrolled" ? "Batch Enrolled" : "Batch Unenrolled"}
             </p>
+            <p className="truncate text-[11px] text-muted-foreground mt-0.5">{toast.batchName}</p>
           </div>
         </div>
       ))}

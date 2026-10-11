@@ -28,24 +28,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { formatSimpleDate } from "@/lib/dates";
 
 const TABS: { key: ContentType; label: string }[] = [
-  { key: "Videos", label: "Lectures" },
-  { key: "notes", label: "Notes" },
-  { key: "DppNotes", label: "DPPs" },
-  { key: "Test", label: "Tests" },
+  { key: "Videos", label: "📹 Lectures" },
+  { key: "notes", label: "📝 Notes" },
+  { key: "DppNotes", label: "📋 DPPs" },
+  { key: "Test", label: "🎯 Tests" },
 ];
 
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/topic/$topicId/")({
   head: () => ({
     meta: [
-      { title: "Chapter Content — Study Ace" },
+      { title: "Chapter Content — Physics Wallah (PW)" },
       {
         name: "description",
-        content: "Watch lectures, view chapter notes, and access DPPs on Study Ace.",
+        content: "Watch lectures, view chapter notes, and access DPPs on Physics Wallah.",
       },
-      { property: "og:title", content: "Chapter Content — Study Ace" },
+      { property: "og:title", content: "Chapter Content — Physics Wallah (PW)" },
       {
         property: "og:description",
-        content: "Watch lectures, view chapter notes, and access DPPs on Study Ace.",
+        content: "Watch lectures, view chapter notes, and access DPPs on Physics Wallah.",
       },
     ],
   }),
@@ -112,16 +112,16 @@ function TopicPage() {
       <PageTitle title={name ?? "Chapter"} />
 
       {/* Filter Tabs */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 inline-flex rounded-xl bg-muted p-1 border border-border">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={
-              "rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer " +
+              "rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer " +
               (tab === t.key
-                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/25"
-                : "border border-sky-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-sky-50 dark:hover:bg-slate-800 hover:text-sky-700 dark:hover:text-sky-300")
+                ? "bg-card text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground")
             }
           >
             {t.label}
@@ -240,44 +240,42 @@ function VideoRow({
   const title = item.topic ?? item.videoDetails?.name ?? item.name ?? "Lecture";
 
   return (
-    <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 transition hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md hover:shadow-sky-100 dark:hover:shadow-none">
+    <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 bg-card border border-border transition hover:border-primary/50 hover:shadow-xs">
       <Link
         to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
         params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
         search={{ videoId: targetLectureId, title }}
-        className="flex items-center gap-4 min-w-0 flex-1"
+        className="flex items-center gap-3.5 min-w-0 flex-1"
       >
         {thumb ? (
-          <div className="relative h-20 w-32 flex-none overflow-hidden rounded-xl bg-sky-50 dark:bg-slate-800 border border-sky-100 dark:border-slate-800">
+          <div className="relative h-18 w-28 flex-none overflow-hidden rounded-lg bg-muted border border-border">
             <img
               src={thumb}
               alt={item.topic ?? "Lecture"}
               loading="lazy"
               className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-sky-950/20 opacity-0 transition duration-200 group-hover:opacity-100">
-              <Play className="h-6 w-6 fill-current text-white drop-shadow" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition duration-200 group-hover:opacity-100">
+              <Play className="h-5 w-5 fill-current text-white drop-shadow" />
             </div>
           </div>
         ) : (
-          <div className="grid h-20 w-32 flex-none place-items-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 dark:from-slate-800 dark:to-slate-900 border border-sky-100 dark:border-slate-800 text-sky-600 dark:text-sky-400 transition duration-200 group-hover:scale-105">
-            <Play className="h-6 w-6 fill-current" />
+          <div className="grid h-18 w-28 flex-none place-items-center rounded-lg bg-muted border border-border text-foreground transition duration-200 group-hover:scale-105">
+            <Play className="h-5 w-5 fill-current" />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100 transition group-hover:text-sky-600 dark:group-hover:text-sky-400">
+          <h2 className="line-clamp-2 text-sm font-bold text-foreground transition group-hover:text-primary">
             {title}
           </h2>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground font-medium">
             {item.videoDetails?.duration && <span>{item.videoDetails.duration}</span>}
             {item.status && !item.videoDetails?.duration && <span>{item.status}</span>}
             {item.startTime && (
               <span suppressHydrationWarning>· {formatSimpleDate(item.startTime)}</span>
             )}
-            <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className="text-sky-600 dark:text-sky-400 font-semibold text-[11px]">
-              HD Stream
-            </span>
+            <span className="text-border">·</span>
+            <span className="text-primary font-semibold text-[11px]">HD Stream</span>
           </div>
         </div>
       </Link>
@@ -287,10 +285,10 @@ function VideoRow({
           to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
           params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
           search={{ videoId: targetLectureId, title }}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-sky-700 cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-2xs transition hover:bg-primary/90 cursor-pointer"
         >
           <Play className="h-3 w-3 fill-current" />
-          <span>Play Video</span>
+          <span>Play</span>
         </Link>
       </div>
     </div>

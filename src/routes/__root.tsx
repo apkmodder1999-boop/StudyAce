@@ -78,23 +78,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Study Ace — Free Batches, Lectures & Study Material" },
+      { title: "Batches — Eduzex · Physics Wallah" },
       {
         name: "description",
         content:
-          "Explore batches, subjects, lectures, notes and DPPs in high-definition with Study Ace.",
+          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
       },
-      { property: "og:title", content: "Study Ace — Free Batches, Lectures & Study Material" },
+      { property: "og:title", content: "Batches — Eduzex · Physics Wallah" },
       {
         property: "og:description",
         content:
-          "Explore batches, subjects, lectures, notes and DPPs in high-definition with Study Ace.",
+          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Study Ace" },
+      { property: "og:site_name", content: "Physics Wallah" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -102,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "icon",
         type: "image/svg+xml",
-        href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z'/><path d='M22 10v6'/><path d='M6 12.5V16a6 3 0 0 0 12 0v-3.5'/></svg>",
+        href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%23111827'/><text x='16' y='21' font-family='sans-serif' font-weight='900' font-size='13' text-anchor='middle' fill='%23ffffff'>PW</text></svg>",
       },
     ],
   }),
