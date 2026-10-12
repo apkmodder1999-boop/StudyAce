@@ -204,10 +204,10 @@ function LecturePage() {
       />
 
       {isOverallLoading && (
-        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-sky-100 dark:border-slate-800 p-8 text-center rounded-2xl shadow-sm">
-          <Loader2 className="h-9 w-9 animate-spin text-sky-600 dark:text-sky-400" />
-          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Loading lecture…</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+        <div className="card-surface aspect-video w-full flex flex-col items-center justify-center gap-3 bg-card border border-primary/20 p-8 text-center rounded-2xl shadow-sm">
+          <Loader2 className="h-9 w-9 animate-spin text-primary" />
+          <p className="text-sm font-bold text-foreground">Loading lecture…</p>
+          <p className="text-xs text-muted-foreground font-medium">
             Please wait while the video stream is initialized
           </p>
         </div>

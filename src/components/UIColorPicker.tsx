@@ -39,14 +39,24 @@ export function UIColorPicker() {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:scale-105 relative ${
-          isOpen ? "ring-2 ring-primary border-transparent" : "hover:bg-muted"
-        }`}
+        className="h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 relative"
+        style={{
+          background: `linear-gradient(135deg, ${activeColor.bgHex}25, ${activeColor.bgHex}45)`,
+          border: `2px solid ${activeColor.bgHex}`,
+          boxShadow: isOpen
+            ? `0 0 0 3px ${activeColor.bgHex}45, 0 4px 12px ${activeColor.bgHex}35`
+            : `0 2px 8px ${activeColor.bgHex}30`,
+        }}
         title="Change UI Colour & Theme (Dark/Light, Blue #25A7DA, Green #7CFC00)"
         aria-label="Change UI Colour & Theme"
         aria-expanded={isOpen}
       >
-        <Palette className="h-4 w-4 text-foreground transition-transform hover:rotate-12" />
+        <Palette
+          className="h-4 w-4 transition-transform hover:rotate-12"
+          style={{
+            color: activeColor.id === "green" && !isDark ? "#1d5200" : activeColor.bgHex,
+          }}
+        />
         {/* Miniature active accent color dot on the circle */}
         <span
           className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-card shadow-xs transition-colors"

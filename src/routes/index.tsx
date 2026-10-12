@@ -1,14 +1,25 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronRight, BookmarkCheck, Check, Plus, BookOpen, X } from "lucide-react";
+import {
+  Search,
+  BookmarkCheck,
+  Check,
+  Tv,
+  Users,
+  ChevronDown,
+  Clock,
+  Bookmark,
+  Zap,
+} from "lucide-react";
 import { fetchBatches, type Batch } from "@/lib/api";
-import { formatSimpleDate } from "@/lib/dates";
 import { Shell, Loading, ErrorBox } from "@/components/shell";
 import { useEnrollment, type EnrolledBatch } from "@/lib/enrollment-system";
+import { useTheme, type ThemeColor } from "@/hooks/use-theme";
+import { PWModal, type ModalType } from "@/components/PWModals";
 
 interface IndexSearch {
-  tab?: "all" | "enrolled";
+  tab?: "study" | "batches" | "all" | "enrolled";
 }
 
 type CategoryFilter =
@@ -25,55 +36,61 @@ const CATEGORY_CHIPS: { id: CategoryFilter; label: string }[] = [
   { id: "hinglish", label: "Hinglish" },
 ];
 
-const BATCH_GRADIENTS = [
-  "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)", // Deep Indigo & Electric Blue
-  "linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #2563eb 100%)", // Royal PW Blue
-  "linear-gradient(135deg, #311b92 0%, #4a148c 50%, #7b1fa2 100%)", // Deep Purple Glow
-  "linear-gradient(135deg, #881337 0%, #9f1239 50%, #f43f5e 100%)", // Crimson Rose
-  "linear-gradient(135deg, #064e3b 0%, #047857 50%, #10b981 100%)", // Emerald Teal
-  "linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #f97316 100%)", // Solar Orange
-  "linear-gradient(135deg, #172554 0%, #1e40af 50%, #3b82f6 100%)", // Sapphire Spark
-];
-
-function getGradientForBatch(batchName: string) {
-  if (!batchName) return BATCH_GRADIENTS[0];
+function getGradientForBatch(batchName: string, colorScheme: ThemeColor = "blue") {
   let hash = 0;
-  for (let i = 0; i < batchName.length; i++) {
-    hash = batchName.charCodeAt(i) + ((hash << 5) - hash);
+  const name = batchName || "PW Batch";
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const idx = Math.abs(hash) % BATCH_GRADIENTS.length;
-  return BATCH_GRADIENTS[idx];
-}
 
-function formatCount(num: number): string {
-  if (num === 0) return "0";
-  if (num >= 1000) {
-    const k = num / 1000;
-    return (Math.round(k * 10) / 10).toFixed(1) + " k";
+  if (colorScheme === "green") {
+    const GREEN_PALETTES = [
+      "linear-gradient(135deg, #052e16 0%, #14532d 40%, #7cfc00 100%)",
+      "linear-gradient(135deg, #022c22 0%, #065f46 50%, #4ade80 100%)",
+      "linear-gradient(135deg, #064e3b 0%, #15803d 45%, #7cfc00 100%)",
+      "linear-gradient(135deg, #14532d 0%, #166534 50%, #86efac 100%)",
+    ];
+    return GREEN_PALETTES[Math.abs(hash) % GREEN_PALETTES.length];
   }
-  return num.toString();
+
+  if (colorScheme === "blue") {
+    const BLUE_PALETTES = [
+      "linear-gradient(135deg, #0c2d48 0%, #145da0 45%, #25a7da 100%)",
+      "linear-gradient(135deg, #082f49 0%, #0284c7 50%, #38bdf8 100%)",
+      "linear-gradient(135deg, #0f172a 0%, #0369a1 45%, #25a7da 100%)",
+      "linear-gradient(135deg, #164e63 0%, #0891b2 50%, #25a7da 100%)",
+    ];
+    return BLUE_PALETTES[Math.abs(hash) % BLUE_PALETTES.length];
+  }
+
+  const DEFAULT_PALETTES = [
+    "linear-gradient(135deg, #1e1b4b 0%, #1e40af 45%, #2563eb 100%)",
+    "linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #2563eb 100%)",
+    "linear-gradient(135deg, #172554 0%, #1d4ed8 50%, #3b82f6 100%)",
+  ];
+  return DEFAULT_PALETTES[Math.abs(hash) % DEFAULT_PALETTES.length];
 }
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): IndexSearch => ({
-    tab: search.tab === "enrolled" ? "enrolled" : "all",
+    tab:
+      search.tab === "batches" || search.tab === "all" || search.tab === "enrolled"
+        ? (search.tab as IndexSearch["tab"])
+        : "study",
   }),
   head: () => ({
     meta: [
-      { title: "Batches — Eduzex · Physics Wallah" },
+      { title: "Physics Wallah (PW) — Official Learning Portal" },
       {
         name: "description",
         content:
-          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
+          "Official PW student study zone and batches for JEE, NEET, Class 11, Class 12, and Foundation exams.",
       },
-      {
-        property: "og:title",
-        content: "Batches — Eduzex · Physics Wallah",
-      },
+      { property: "og:title", content: "Physics Wallah (PW) — Official Learning Portal" },
       {
         property: "og:description",
         content:
-          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
+          "Access official batches, recorded video lectures, DPP practice sheets, and handwritten notes on Physics Wallah.",
       },
     ],
   }),
@@ -81,15 +98,17 @@ export const Route = createFileRoute("/")({
 });
 
 function BatchesPage() {
-  const { tab = "all" } = Route.useSearch();
+  const { tab = "study" } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("all");
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [isBatchDropdownOpen, setIsBatchDropdownOpen] = useState(false);
 
-  const { enrolledBatches, enrolledCount, isEnrolled, enroll, unenroll, isMounted } =
-    useEnrollment();
+  const { enrolledBatches, isEnrolled, enroll, unenroll } = useEnrollment();
+  const { colorScheme } = useTheme();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["batches"],
@@ -144,32 +163,40 @@ function BatchesPage() {
         if (selectedCategory === "dropper") {
           return (
             text.includes("dropper") ||
+            text.includes("repeater") ||
             text.includes("target") ||
             text.includes("yakeen") ||
-            text.includes("prayas") ||
-            text.includes("repeater")
+            text.includes("prayas")
           );
         }
         if (selectedCategory === "hinglish") {
-          return (b.language ?? "").toLowerCase().includes("hinglish") || text.includes("hinglish");
+          return (
+            b.language?.toLowerCase().includes("hinglish") ||
+            text.includes("hinglish") ||
+            !b.language
+          );
         }
         return true;
       });
     }
 
     if (!needle) return filtered;
-    return filtered.filter((b) => (b.name + " " + (b.byName ?? "")).toLowerCase().includes(needle));
+
+    return filtered.filter((b) => {
+      const matchName = b.name.toLowerCase().includes(needle);
+      const matchExam = b.byName?.toLowerCase().includes(needle);
+      const matchClass = b.class?.toString().includes(needle);
+      const matchType = b.type?.toLowerCase().includes(needle);
+      return matchName || matchExam || matchClass || matchType;
+    });
   }, [data, query, selectedCategory]);
 
   const filteredEnrolled = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return enrolledBatches;
-    return enrolledBatches.filter((b) =>
-      (b.name + " " + (b.byName ?? "")).toLowerCase().includes(needle),
-    );
-  }, [enrolledBatches, query]);
+    const ids = new Set(enrolledBatches.map((eb) => eb._id));
+    return (data ?? []).filter((b) => ids.has(b._id));
+  }, [data, enrolledBatches]);
 
-  const handleTabChange = (newTab: "all" | "enrolled") => {
+  const handleTabChange = (newTab: "study" | "batches" | "all" | "enrolled") => {
     navigate({
       search: (prev: IndexSearch) => ({ ...prev, tab: newTab }),
     });
@@ -191,303 +218,371 @@ function BatchesPage() {
 
   return (
     <Shell>
-      {/* SEARCH BAR (EXACT MATCH TO USER TEMPLATE) */}
-      <div className="mb-5 relative">
-        <div className="relative flex items-center w-full">
-          <span className="pointer-events-none absolute left-4 text-[#94a3b8]">
-            <Search className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          </span>
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search batches by name, exam (JEE, NEET), class..."
-            className="w-full py-[13px] pl-[46px] pr-[44px] text-[14.5px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 rounded-xl bg-card text-foreground outline-none shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:border-primary focus:ring-3 focus:ring-primary/20 transition-all"
-          />
-          {q && (
-            <button
-              type="button"
-              onClick={() => setQ("")}
-              className="absolute right-3.5 h-6 w-6 rounded-full bg-[#e2e8f0] dark:bg-slate-700 text-[#475569] dark:text-slate-200 flex items-center justify-center text-xs font-bold hover:bg-[#cbd5e1] transition cursor-pointer"
-              aria-label="Clear search"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* HEADING BAR WITH GREEN BOARD COUNT BADGE */}
-      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-[23px] font-extrabold tracking-[-0.03em] text-[#111827] dark:text-slate-100 flex items-center gap-2.5">
-            <span>{tab === "enrolled" ? "My Enrolled Batches" : "All Batches"}</span>
-            <span className="green-board">
-              {tab === "enrolled"
-                ? isMounted
-                  ? formatCount(filteredEnrolled.length)
-                  : "0"
-                : formatCount(batches.length)}
-            </span>
-          </h1>
-        </div>
-
-        {/* Tab Controls: All Batches / My Batches */}
-        <div className="inline-flex rounded-xl bg-muted p-1 border border-border shrink-0">
-          <button
-            type="button"
-            onClick={() => handleTabChange("all")}
-            className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-              tab === "all"
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>All Batches</span>
-            {data && (
-              <span className="rounded-full bg-primary/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-primary">
-                {data.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTabChange("enrolled")}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-              tab === "enrolled"
-                ? "bg-card text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
-            <span>Enrolled</span>
-            <span
-              suppressHydrationWarning
-              className="rounded-full bg-primary/10 px-1.5 py-0.2 font-mono tabular-nums text-[10px] font-bold text-primary"
-            >
-              {isMounted ? enrolledCount : 0}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <span className="block text-[13px] text-[#64748b] font-medium -mt-1.5 mb-3.5">
-        {tab === "enrolled"
-          ? "Your active enrolled batches with full lecture access, notes and DPPs."
-          : `Showing active session batches with recorded lectures, handwritten notes & DPPs.`}
-      </span>
-
-      {/* QUICK FILTER CHIPS (MATCHING SCREENSHOT) */}
-      {tab === "all" && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-3.5 mb-3.5 scrollbar-none">
-          {CATEGORY_CHIPS.map((chip) => {
-            const active = selectedCategory === chip.id;
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => setSelectedCategory(chip.id)}
-                className={`whitespace-nowrap px-4 py-[7px] rounded-[24px] text-[13px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                  active
-                    ? "bg-[#111827] text-white border-[#111827] shadow-[0_3px_8px_rgba(17,24,39,0.2)] dark:bg-blue-600 dark:border-blue-600"
-                    : "border border-[#cbd5e1] dark:border-slate-700 bg-card text-[#334155] dark:text-slate-300 hover:border-[#94a3b8] hover:bg-slate-50 dark:hover:bg-slate-800"
-                }`}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* SKELETON / LOADING STATE */}
-      {isLoading && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-[18px] border border-border bg-card overflow-hidden shadow-xs flex flex-col"
-            >
-              <div className="aspect-video w-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
-              <div className="p-4 space-y-3">
-                <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-                <div className="h-5 w-4/5 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-                <div className="h-4 w-3/5 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+      {/* ============================================================== */}
+      {/* SCREEN 1: STUDY ZONE (CLEANED PER USER INSTRUCTIONS)           */}
+      {/* ============================================================== */}
+      {tab === "study" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* YOUR BATCH / MY BATCHES HEADER SECTION */}
+          <div className="relative -mx-3.5 sm:-mx-4 -mt-3 sm:-mt-4 p-4 sm:p-5 bg-gradient-to-b from-[#13122b] to-[#1c1a3b] text-white shadow-md border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                  YOUR BATCH
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsBatchDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 text-base sm:text-lg font-black text-white hover:text-amber-400 transition cursor-pointer mt-0.5 text-left"
+                >
+                  <span className="truncate max-w-[260px] sm:max-w-md">
+                    {enrolledBatches.length > 0 ? enrolledBatches[0].name : "MY BATCHES"}
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0" />
+                </button>
               </div>
+
+              {enrolledBatches.length > 0 && (
+                <Link
+                  to="/batches/$batchId"
+                  params={{ batchId: enrolledBatches[0]._id }}
+                  className="rounded-xl bg-primary text-primary-foreground font-black text-xs px-3.5 py-2 shadow-md shadow-primary/30 hover:opacity-90 transition shrink-0"
+                >
+                  Resume Study &gt;
+                </Link>
+              )}
             </div>
-          ))}
-        </div>
-      )}
 
-      {error && <ErrorBox message={(error as Error).message} />}
+            {/* Dropdown Menu for Enrolled Batches */}
+            {isBatchDropdownOpen && (
+              <div className="absolute top-full left-4 right-4 mt-2 p-2 rounded-2xl bg-card border border-border text-foreground shadow-2xl z-40 animate-in fade-in zoom-in-95 duration-150">
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                  Enrolled Batches ({enrolledBatches.length})
+                </div>
+                {enrolledBatches.length > 0 ? (
+                  enrolledBatches.map((eb) => (
+                    <Link
+                      key={eb._id}
+                      to="/batches/$batchId"
+                      params={{ batchId: eb._id }}
+                      onClick={() => setIsBatchDropdownOpen(false)}
+                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted text-xs font-bold text-foreground transition"
+                    >
+                      <span className="truncate pr-2">{eb.name}</span>
+                      <span className="text-[10px] text-primary shrink-0">Open &gt;</span>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-xs text-muted-foreground">
+                    <p>No active enrolled batch yet.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsBatchDropdownOpen(false);
+                        handleTabChange("batches");
+                      }}
+                      className="mt-1.5 font-bold text-primary hover:underline"
+                    >
+                      Browse All Batches &gt;
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-      {/* EMPTY STATE */}
-      {!isLoading &&
-        !error &&
-        (tab === "all" ? batches.length === 0 : filteredEnrolled.length === 0) && (
-          <div className="text-center py-16 px-5 bg-card border border-dashed border-[#cbd5e1] dark:border-slate-700 rounded-[18px] my-5">
-            <div className="text-4xl mb-3">⚠️</div>
-            <h3 className="text-lg font-extrabold text-[#111827] dark:text-slate-100 mb-1.5">
-              {tab === "enrolled" ? "No Enrolled Batches Found" : "No Batches Found"}
-            </h3>
-            <p className="text-[13.5px] text-[#64748b] mb-4 max-w-sm mx-auto">
-              {tab === "enrolled"
-                ? "Browse all batches and click 'Enroll Now' to save them here."
-                : "Try searching for terms like 'Arjuna', 'Lakshya', 'JEE', or 'NEET'."}
-            </p>
+          {/* QUICK ACCESS ACTION ICONS (FOCUSED & FUNCTIONAL) */}
+          <div className="grid grid-cols-4 gap-2.5 sm:gap-4 text-center">
+            {/* All Classes */}
             <button
               type="button"
-              onClick={() => {
-                setQ("");
-                setSelectedCategory("all");
-                if (tab === "enrolled") handleTabChange("all");
-              }}
-              className="bg-primary text-primary-foreground px-5 py-2 rounded-lg font-bold text-xs hover:opacity-90 transition cursor-pointer shadow-xs"
+              onClick={() => handleTabChange("batches")}
+              className="group flex flex-col items-center justify-center p-2.5 sm:p-3 transition cursor-pointer"
             >
-              Reset Search
+              <div className="h-13 w-13 sm:h-14 sm:w-14 rounded-2xl bg-white dark:bg-card border border-border shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:border-primary/50 transition">
+                <Tv className="h-6 w-6 text-rose-500" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground mt-1.5 leading-tight">
+                All Classes
+              </span>
+            </button>
+
+            {/* My Batches */}
+            <button
+              type="button"
+              onClick={() => handleTabChange("enrolled")}
+              className="group flex flex-col items-center justify-center p-2.5 sm:p-3 transition cursor-pointer"
+            >
+              <div className="h-13 w-13 sm:h-14 sm:w-14 rounded-2xl bg-white dark:bg-card border border-border shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:border-primary/50 transition">
+                <BookmarkCheck className="h-6 w-6 text-indigo-500" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground mt-1.5 leading-tight">
+                My Batches
+              </span>
+            </button>
+
+            {/* Community (Telegram) */}
+            <a
+              href="https://t.me/+7htXdqnvL0JiYjc1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col items-center justify-center p-2.5 sm:p-3 transition cursor-pointer"
+            >
+              <div className="h-13 w-13 sm:h-14 sm:w-14 rounded-2xl bg-white dark:bg-card border border-border shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:border-primary/50 transition">
+                <Users className="h-6 w-6 text-purple-500" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground mt-1.5 leading-tight">
+                Community
+              </span>
+            </a>
+
+            {/* XP Status */}
+            <button
+              type="button"
+              onClick={() => setActiveModal("rewards")}
+              className="group flex flex-col items-center justify-center p-2.5 sm:p-3 transition cursor-pointer"
+            >
+              <div className="h-13 w-13 sm:h-14 sm:w-14 rounded-2xl bg-white dark:bg-card border border-border shadow-xs flex items-center justify-center group-hover:scale-105 group-hover:border-primary/50 transition">
+                <Zap className="h-6 w-6 text-amber-500 fill-amber-500" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground mt-1.5 leading-tight">
+                XP Rewards
+              </span>
             </button>
           </div>
-        )}
 
-      {/* BATCHES GRID (MATCHING USER SCREENSHOT CARD FORMAT) */}
-      {!isLoading && !error && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(tab === "enrolled" ? filteredEnrolled : batches).map((b) => {
-            const enrolled = isEnrolled(b._id);
-            const category = b.class ? `Class ${b.class}` : b.type?.replace("_", " ") || "PW Batch";
-            const lang = b.language || "Hinglish";
-            const examName = b.byName || "Academic & Competitive";
-            const startDateText = b.startDate
-              ? `Started on ${b.startDate.split("T")[0]}`
-              : "Ongoing Session";
+          {/* MY STUDY ZONE (CLEAN 3-CARD GRID: MY BATCHES, MY HISTORY, BOOKMARKS) */}
+          <div className="space-y-3 pt-2">
+            <h2 className="text-base sm:text-lg font-extrabold text-foreground tracking-tight">
+              My Study Zone
+            </h2>
 
-            return (
-              <article
-                key={b._id}
-                className="group rounded-[18px] border border-[#e2e8f0] dark:border-slate-800 bg-card overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-200 flex flex-col relative"
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              {/* Card 1: My Batches */}
+              <button
+                type="button"
+                onClick={() => handleTabChange("enrolled")}
+                className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-card border border-border hover:border-primary/60 hover:shadow-lg transition cursor-pointer text-center"
               >
-                {/* Banner Area */}
-                <div className="relative w-full bg-[#0f172a] overflow-hidden rounded-t-[18px]">
-                  {b.previewImage ? (
-                    <img
-                      src={b.previewImage}
-                      alt={b.name}
-                      loading="lazy"
-                      className="w-full aspect-video object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                  ) : (
-                    <div
-                      className="dynamic-batch-banner"
-                      style={{ background: getGradientForBatch(b.name) }}
-                    >
-                      <div className="relative z-10 flex items-center justify-between gap-1.5 mt-5">
-                        <span className="text-[10px] font-extrabold tracking-wider text-white bg-black/25 backdrop-blur-xs px-2 py-0.5 rounded-full uppercase border border-white/20">
-                          PHYSICS WALLAH
-                        </span>
-                        <span className="text-[#fde047] text-[11px] font-extrabold">
-                          ★ OFFICIAL
-                        </span>
-                      </div>
-                      <div className="relative z-10 my-auto py-1">
-                        <div
-                          className="text-[16px] font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)] line-clamp-2"
-                          title={b.name}
-                        >
-                          {b.name}
-                        </div>
-                      </div>
-                      <div className="relative z-10 flex items-center gap-1.5">
-                        <span className="text-[10px] font-extrabold text-white bg-white/22 backdrop-blur-xs px-2 py-0.5 rounded-[10px] border border-white/30 uppercase tracking-wide">
-                          ⚡ {category}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Banner Top Pill ("👑 Multiple plans inside" per screenshot) */}
-                  <div className="absolute top-2.5 left-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold text-[#1e293b] dark:text-slate-200 flex items-center gap-1.5 shadow-[0_2px_6px_rgba(0,0,0,0.1)]">
-                    <span className="text-[#eab308]">👑</span>
-                    <span>Multiple plans inside</span>
-                  </div>
-
-                  {enrolled && (
-                    <div className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-xs border border-primary/25">
-                      <BookmarkCheck className="h-3 w-3" />
-                      <span>Enrolled</span>
-                    </div>
-                  )}
+                <div className="h-11 w-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                  <BookmarkCheck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
+                <span className="text-sm font-bold text-foreground">My Batches</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {enrolledBatches.length} active enrollments
+                </span>
+              </button>
 
-                {/* Card Content */}
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[12.5px] font-bold text-[#ea580c] uppercase tracking-[0.3px]">
-                      {category}
-                    </span>
-                    <span className="text-[11px] font-extrabold text-[#334155] dark:text-slate-300 bg-[#f1f5f9] dark:bg-slate-800 border border-[#e2e8f0] dark:border-slate-700 px-2 py-0.5 rounded-[6px] uppercase tracking-[0.5px]">
-                      {lang}
-                    </span>
-                  </div>
-
-                  <h2
-                    className="text-[16.5px] font-extrabold text-[#0f172a] dark:text-slate-100 leading-[1.35] mb-2.5 line-clamp-2 min-h-[44px]"
-                    title={b.name}
-                  >
-                    {b.name}
-                  </h2>
-
-                  <div className="flex items-center gap-1.5 text-[12.5px] text-[#64748b] mb-1.5 truncate">
-                    <span className="text-sm">📖</span>
-                    <span className="truncate">{examName}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-[12.5px] text-[#64748b] mb-4">
-                    <span className="h-[7px] w-[7px] rounded-full bg-[#10b981] shrink-0" />
-                    <span>Ongoing | {startDateText}</span>
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className="mt-auto pt-3.5 border-t border-[#f1f5f9] dark:border-slate-800 flex items-center justify-between gap-3">
-                    <div className="flex flex-col">
-                      <div className="text-[18px] font-extrabold text-[#0f172a] dark:text-slate-100 flex items-baseline gap-1.5">
-                        <span>Free</span>
-                        <span className="text-[12px] font-semibold text-[#94a3b8] line-through">
-                          {b.feeTotal ? `₹${b.feeTotal}` : "₹1,999"}
-                        </span>
-                      </div>
-                      <span className="text-[11.5px] font-extrabold text-[#10b981]">100% OFF</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleEnroll(e, b, enrolled)}
-                        className={`px-4 py-2 rounded-[10px] text-[13.5px] font-bold font-inherit cursor-pointer flex items-center gap-1.5 transition-all ${
-                          enrolled
-                            ? "bg-slate-200 dark:bg-slate-700 text-[#0f172a] dark:text-slate-100 hover:bg-rose-100 hover:text-rose-600"
-                            : "bg-[#111827] dark:bg-primary text-white dark:text-primary-foreground hover:bg-[#1e293b] dark:hover:opacity-90 hover:scale-[1.02]"
-                        }`}
-                      >
-                        {enrolled ? "Enrolled ✓" : "Enroll Now"}
-                      </button>
-
-                      <Link
-                        to="/batches/$batchId"
-                        params={{ batchId: b._id }}
-                        className="h-[38px] w-[38px] rounded-[10px] border-[1.5px] border-[#cbd5e1] dark:border-slate-700 bg-card text-[#111827] dark:text-slate-100 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-[#94a3b8] transition cursor-pointer"
-                        title="View Batch Details"
-                      >
-                        <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
-                      </Link>
-                    </div>
-                  </div>
+              {/* Card 2: My History */}
+              <button
+                type="button"
+                onClick={() => setActiveModal("history")}
+                className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-card border border-border hover:border-primary/60 hover:shadow-lg transition cursor-pointer text-center"
+              >
+                <div className="h-11 w-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                  <Clock className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
-              </article>
-            );
-          })}
+                <span className="text-sm font-bold text-foreground">My History</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  Recent watch activity
+                </span>
+              </button>
+
+              {/* Card 3: Bookmarks */}
+              <button
+                type="button"
+                onClick={() => setActiveModal("bookmarks")}
+                className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-card border border-border hover:border-primary/60 hover:shadow-lg transition cursor-pointer text-center"
+              >
+                <div className="h-11 w-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-2.5 group-hover:scale-110 transition">
+                  <Bookmark className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <span className="text-sm font-bold text-foreground">Bookmarks</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  Saved study material
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* MOTIVATIONAL BANNER */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-muted/60 dark:bg-card border border-border">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-relaxed">
+              Padhlo chahe kahi se,
+            </p>
+            <p className="text-xs sm:text-sm font-extrabold text-foreground mt-0.5">
+              <span className="underline decoration-primary decoration-2 underline-offset-4">
+                Manzil
+              </span>{" "}
+              milegi yahi se...
+            </p>
+          </div>
         </div>
       )}
+
+      {/* ============================================================== */}
+      {/* SCREEN 2: BATCHES CATALOG                                      */}
+      {/* ============================================================== */}
+      {tab !== "study" && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* SEARCH BAR */}
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Search className="h-4 w-4" />
+            </span>
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search batches by name, exam (JEE, NEET), class..."
+              className="w-full py-2.5 pl-9 pr-10 text-xs sm:text-sm border border-border rounded-xl bg-card text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-xs transition"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold hover:text-foreground"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* CATEGORY FILTER CHIPS */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {CATEGORY_CHIPS.map((chip) => {
+              const active = selectedCategory === chip.id;
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(chip.id)}
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer shrink-0 ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                      : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* SKELETON / LOADING */}
+          {isLoading && <Loading text="Loading official PW batches…" />}
+          {error && <ErrorBox message={(error as Error).message} />}
+
+          {/* BATCH CARDS */}
+          {!isLoading && !error && (
+            <div className="grid gap-5 sm:grid-cols-2">
+              {(tab === "enrolled" ? filteredEnrolled : batches).map((b) => {
+                const enrolled = isEnrolled(b._id);
+                const lang = b.language || "Hinglish";
+
+                return (
+                  <article
+                    key={b._id}
+                    className="group rounded-2xl border border-primary/20 bg-card overflow-hidden shadow-xs hover:border-primary/60 hover:shadow-xl hover:shadow-primary/15 transition-all duration-300 flex flex-col"
+                  >
+                    {/* BATCH POSTER BANNER */}
+                    <div className="relative w-full aspect-[16/9] overflow-hidden bg-gradient-to-br from-[#1b193d] via-[#15132d] to-[#0c0a1f]">
+                      {b.previewImage ? (
+                        <img
+                          src={b.previewImage}
+                          alt={b.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition duration-300 group-hover:scale-102"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full p-4 flex flex-col justify-between relative overflow-hidden"
+                          style={{ background: getGradientForBatch(b.name, colorScheme) }}
+                        >
+                          {/* Banner Top Pills */}
+                          <div className="flex items-center justify-between gap-2 z-10">
+                            <span className="rounded-md bg-indigo-600 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-xs">
+                              NextStudy
+                            </span>
+                            <span className="rounded-md bg-white/20 backdrop-blur-xs text-white border border-white/30 px-2 py-0.5 text-[10px] font-bold uppercase">
+                              {lang}
+                            </span>
+                          </div>
+
+                          {/* Bold Batch Title */}
+                          <div className="my-auto z-10 py-1">
+                            <h3 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-md line-clamp-2">
+                              {b.name.toUpperCase()}
+                            </h3>
+                          </div>
+
+                          {/* Faculty Team Labels at Banner Bottom */}
+                          <div className="flex items-center justify-between gap-1.5 z-10 pt-1 border-t border-white/20">
+                            <span className="text-[10px] font-extrabold text-white bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-md">
+                              PW Stars Team
+                            </span>
+                            <span className="text-[10px] font-extrabold text-white bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-md">
+                              Kota Legends Team
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Enrolled Badge if already enrolled */}
+                      {enrolled && (
+                        <div className="absolute top-2.5 right-2.5 bg-primary text-primary-foreground font-black px-2.5 py-0.5 rounded-full text-[10px] flex items-center gap-1 shadow-md shadow-primary/30 z-20">
+                          <BookmarkCheck className="h-3 w-3" />
+                          <span>Enrolled</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CARD BODY CONTENT */}
+                    <div className="p-4 flex flex-col flex-1">
+                      <h2 className="text-base sm:text-lg font-extrabold text-foreground leading-snug line-clamp-1">
+                        {b.name}
+                      </h2>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        Curated by top faculty for {b.byName || "IIT-JEE & NEET"} Aspirants.
+                        Includes comprehensive video lectures, notes, and DPPs.
+                      </p>
+
+                      {/* CARD FOOTER DUAL ACTION BUTTONS */}
+                      <div className="mt-auto pt-4 border-t border-border flex items-center gap-3">
+                        {/* Button 1: Enroll / Enrolled */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleEnroll(e, b, enrolled)}
+                          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1.5 ${
+                            enrolled
+                              ? "bg-primary/15 text-primary border border-primary/30 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/30"
+                              : "bg-muted hover:bg-muted/80 text-foreground border border-border"
+                          }`}
+                        >
+                          <BookmarkCheck className="h-3.5 w-3.5" />
+                          <span>{enrolled ? "Enrolled ✓" : "Enroll"}</span>
+                        </button>
+
+                        {/* Button 2: Let's Study */}
+                        <Link
+                          to="/batches/$batchId"
+                          params={{ batchId: b._id }}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-black text-xs cursor-pointer shadow-md shadow-primary/30 transition flex items-center justify-center gap-1.5"
+                        >
+                          <span>Let's Study</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Global Modals for Quick Actions */}
+      <PWModal type={activeModal} onClose={() => setActiveModal(null)} />
     </Shell>
   );
 }

@@ -11,7 +11,7 @@ export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/")({
       {
         name: "description",
         content:
-          "Chapter-wise topics with video lectures, notes, DPPs and tests on Physics Wallah.",
+          "Chapter-wise topics with video lectures, notes, and DPP study material on Physics Wallah.",
       },
       { property: "og:title", content: "Chapters & Topics — Physics Wallah (PW)" },
       {
@@ -44,7 +44,7 @@ function SubjectPage() {
           {
             label: "Batches",
             to: (
-              <Link to="/" className="hover:text-sky-600 transition">
+              <Link to="/" className="hover:text-primary transition">
                 Batches
               </Link>
             ),
@@ -55,7 +55,7 @@ function SubjectPage() {
               <Link
                 to="/batches/$batchId"
                 params={{ batchId }}
-                className="hover:text-sky-600 transition"
+                className="hover:text-primary transition"
               >
                 {batch.data?.name ?? "Batch"}
               </Link>
@@ -66,7 +66,7 @@ function SubjectPage() {
       />
       <PageTitle
         title={subject?.subject ?? "Chapters"}
-        subtitle="Select a chapter to watch video lectures, view notes, or attempt DPP tests."
+        subtitle="Select a chapter to watch video lectures, view notes, or practice DPP exercises."
       />
 
       {isLoading && <Loading text="Loading chapters…" />}
@@ -82,18 +82,18 @@ function SubjectPage() {
             to="/batches/$batchId/subject/$subjectId/topic/$topicId"
             params={{ batchId, subjectId, topicId: t._id }}
             search={{ name: t.name, slug: t.slug }}
-            className="group card-surface flex items-center justify-between gap-4 p-4 bg-card border border-border transition hover:border-primary/50 hover:shadow-xs"
+            className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-primary/30 hover:border-primary/70 hover:shadow-xl hover:shadow-primary/15 transition-all rounded-2xl"
           >
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-muted text-xs font-bold text-foreground border border-border">
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-xs font-black text-primary border border-primary/30 shadow-2xs">
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-sm font-bold text-foreground group-hover:text-primary transition">
                   {t.name}
                 </h2>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
-                  <span className="flex items-center gap-1">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <span className="flex items-center gap-1 text-primary">
                     <Video className="h-3 w-3 text-primary" />
                     <span>{t.videos ?? 0} lectures</span>
                   </span>
@@ -105,7 +105,7 @@ function SubjectPage() {
                   {Boolean(t.exercises) && (
                     <>
                       <span className="text-border">·</span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 text-primary">
                         <CheckCircle2 className="h-3 w-3 text-primary" />
                         <span>{t.exercises} DPPs</span>
                       </span>
@@ -115,8 +115,8 @@ function SubjectPage() {
               </div>
             </div>
 
-            <div className="flex h-7 w-7 flex-none items-center justify-center rounded-md bg-muted text-muted-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
-              <ArrowRight className="h-3.5 w-3.5" />
+            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
+              <ArrowRight className="h-4 w-4" />
             </div>
           </Link>
         ))}

@@ -85,16 +85,20 @@ function BatchPage() {
 
       {!isLoading && !error && data && (
         <div className="space-y-6">
-          {/* Official PW Batch Hero Header Banner */}
-          <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 sm:p-8 shadow-xs">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          {/* Official PW Batch Hero Header Banner with Blended Ambient Theme */}
+          <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-card via-card to-primary/15 p-6 sm:p-8 shadow-xl shadow-primary/10">
+            {/* Ambient decorative glow orbs */}
+            <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+            <div className="pointer-events-none absolute -left-20 -bottom-20 h-52 w-52 rounded-full bg-primary/15 blur-2xl" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               {/* Left Column: Info & Details */}
               <div className="flex-1 space-y-3.5">
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-md bg-slate-950 text-white px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide uppercase">
+                  <span className="rounded-md bg-primary text-primary-foreground px-2.5 py-0.5 text-[10px] font-black tracking-wide uppercase shadow-sm shadow-primary/25">
                     PW OFFICIAL BATCH
                   </span>
-                  <span className="rounded-md bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold">
+                  <span className="rounded-md bg-primary/15 text-primary border border-primary/30 px-2.5 py-0.5 text-[10px] font-bold">
                     {data.language ?? "Hinglish"}
                   </span>
                   {data.class && (
@@ -102,7 +106,7 @@ function BatchPage() {
                       Class {data.class}
                     </span>
                   )}
-                  <span className="rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold">
+                  <span className="rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold">
                     ✓ 100% FREE PASS
                   </span>
                 </div>
@@ -137,10 +141,10 @@ function BatchPage() {
                     <button
                       type="button"
                       onClick={() => unenroll(batchId)}
-                      className="group inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold text-foreground transition hover:border-destructive hover:text-destructive cursor-pointer shadow-xs"
+                      className="group inline-flex items-center gap-2 rounded-xl bg-primary/20 text-primary border border-primary/40 px-4 py-2.5 text-xs font-bold transition hover:bg-rose-500/15 hover:text-rose-500 hover:border-rose-500/30 cursor-pointer shadow-xs"
                       title="Click to unenroll from this batch"
                     >
-                      <Check className="h-4 w-4 text-primary group-hover:hidden" />
+                      <Check className="h-4 w-4 stroke-[3] group-hover:hidden" />
                       <span className="group-hover:hidden">Enrolled in Batch ✓</span>
                       <span className="hidden group-hover:inline">Unenroll</span>
                     </button>
@@ -157,9 +161,9 @@ function BatchPage() {
                           previewImage: previewImg,
                         })
                       }
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary/90 px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-md transition cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary hover:opacity-90 px-5 py-2.5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4 stroke-[3]" />
                       <span>Enroll in Batch (Free)</span>
                     </button>
                   )}
@@ -172,7 +176,7 @@ function BatchPage() {
 
               {/* Right Column: Batch Poster */}
               {previewImg && (
-                <div className="w-full sm:w-72 lg:w-80 shrink-0 aspect-video rounded-xl overflow-hidden border border-border bg-muted shadow-sm">
+                <div className="w-full sm:w-72 lg:w-80 shrink-0 aspect-video rounded-xl overflow-hidden border border-primary/20 bg-muted shadow-md">
                   <img src={previewImg} alt={data.name} className="h-full w-full object-cover" />
                 </div>
               )}
@@ -180,15 +184,15 @@ function BatchPage() {
           </div>
 
           {/* Official PW Batch Tabs: "All Classes", "About Batch", "Notices" */}
-          <div className="border-b border-border">
-            <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-2xl bg-muted/80 p-1 border border-primary/20 shadow-xs">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("classes")}
-                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "classes"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                 }`}
               >
                 All Classes ({allSubjects.length})
@@ -196,10 +200,10 @@ function BatchPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("about")}
-                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "about"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                 }`}
               >
                 Batch Overview
@@ -207,10 +211,10 @@ function BatchPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("notices")}
-                className={`border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeTab === "notices"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                 }`}
               >
                 Notices & Updates
@@ -263,7 +267,7 @@ function BatchPage() {
                       key={s._id}
                       to="/batches/$batchId/subject/$subjectId"
                       params={{ batchId, subjectId: s._id }}
-                      className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-border transition hover:border-primary/50 hover:shadow-xs rounded-2xl"
+                      className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-primary/30 hover:border-primary/70 transition-all hover:shadow-xl hover:shadow-primary/15 rounded-2xl"
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
                         {img ? (
@@ -271,10 +275,10 @@ function BatchPage() {
                             src={img}
                             alt={s.subject}
                             loading="lazy"
-                            className="h-13 w-13 rounded-xl object-cover bg-muted flex-none border border-border"
+                            className="h-13 w-13 rounded-xl object-cover bg-muted flex-none border border-primary/20 shadow-xs"
                           />
                         ) : (
-                          <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-slate-950 text-white border border-border font-bold text-base">
+                          <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-primary/15 text-primary border border-primary/30 font-black text-base shadow-2xs">
                             {s.subject?.[0] ?? "S"}
                           </div>
                         )}
@@ -285,7 +289,7 @@ function BatchPage() {
                           </h3>
                           {teacherName ? (
                             <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground font-medium">
-                              <User className="h-3 w-3 text-muted-foreground flex-none" />
+                              <User className="h-3 w-3 text-primary flex-none" />
                               <span className="truncate">{teacherName}</span>
                             </p>
                           ) : (
@@ -296,7 +300,7 @@ function BatchPage() {
                         </div>
                       </div>
 
-                      <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-muted text-muted-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
+                      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
                         <ArrowRight className="h-4 w-4" />
                       </div>
                     </Link>

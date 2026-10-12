@@ -75,62 +75,64 @@
   --shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 8px 24px -6px rgba(37, 99, 235, 0.18);
 }
 
-/* UI COLOR THEME: BLUE #25A7DA (Light) */
+/* UI COLOR THEME: BLUE #25A7DA (Light) - Deeply Mixed Harmonious Palette */
 :root[data-color="blue"] {
   --pw-blue: #25a7da;
   --primary: #25a7da;
   --primary-foreground: #ffffff;
-  --background: #f8fafc;
+  --background: #f0f8fd;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
+  --surface-2: #e5f3fb;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --secondary: #f0f9fc;
-  --secondary-foreground: #0369a1;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f0f9fc;
+  --card-foreground: #081a29;
+  --secondary: #e2f3fb;
+  --secondary-foreground: #0284c7;
+  --muted: #e7f4fb;
+  --muted-foreground: #48657d;
+  --accent: #e2f3fb;
   --accent-foreground: #0284c7;
-  --border: #e2e8f0;
+  --border: #c3e4f7;
   --ring: #25a7da;
-  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.25), 0 8px 24px -6px rgba(37, 167, 218, 0.15);
+  --shadow-card: 0 4px 20px rgba(37, 167, 218, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.4), 0 8px 24px -4px rgba(37, 167, 218, 0.28);
   --gradient-hero: radial-gradient(
-    1200px 520px at 50% -40px,
-    rgba(37, 167, 218, 0.08) 0%,
-    rgba(37, 167, 218, 0.02) 35%,
-    #f8fafc 80%
+    1200px 580px at 50% -50px,
+    rgba(37, 167, 218, 0.25) 0%,
+    rgba(226, 243, 251, 0.7) 40%,
+    #f0f8fd 85%
   );
 }
 
-/* UI COLOR THEME: GREEN #7CFC00 (Light) */
+/* UI COLOR THEME: GREEN #7CFC00 (Light) - Deeply Mixed Harmonious Palette */
 :root[data-color="green"] {
   --pw-blue: #7cfc00;
   --primary: #7cfc00;
-  --primary-foreground: #090d16;
-  --background: #f8fafc;
+  --primary-foreground: #051a05;
+  --background: #f3faf1;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
+  --surface-2: #e6f7e2;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --secondary: #f4fce8;
-  --secondary-foreground: #365314;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f4fce8;
-  --accent-foreground: #365314;
-  --border: #e2e8f0;
+  --card-foreground: #061907;
+  --secondary: #e6f9e0;
+  --secondary-foreground: #225c00;
+  --muted: #eaf8e5;
+  --muted-foreground: #466742;
+  --accent: #e6f9e0;
+  --accent-foreground: #225c00;
+  --border: #c3f3b4;
   --ring: #7cfc00;
-  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.3), 0 8px 24px -6px rgba(124, 252, 0, 0.18);
+  --shadow-card: 0 4px 20px rgba(124, 252, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.5), 0 8px 24px -4px rgba(124, 252, 0, 0.32);
   --gradient-hero: radial-gradient(
-    1200px 520px at 50% -40px,
-    rgba(124, 252, 0, 0.08) 0%,
-    rgba(124, 252, 0, 0.02) 35%,
-    #f8fafc 80%
+    1200px 580px at 50% -50px,
+    rgba(124, 252, 0, 0.24) 0%,
+    rgba(230, 249, 224, 0.7) 40%,
+    #f3faf1 85%
   );
 }
 
 .dark {
-  /* Dark Theme */
+  /* Dark Theme Default */
   --pw-blue: #3b82f6;
   --pw-navy: #0f172a;
   --pw-dark: #1e293b;
@@ -165,15 +167,15 @@
   --pw-badge: #0f172a;
   --gradient-hero: radial-gradient(
     1200px 520px at 50% -40px,
-    rgba(37, 99, 235, 0.12) 0%,
-    rgba(17, 24, 39, 0.4) 40%,
+    rgba(37, 99, 235, 0.16) 0%,
+    rgba(17, 24, 39, 0.5) 40%,
     #0b0f17 90%
   );
   --shadow-card: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 0 1px rgba(59, 130, 246, 0.25), 0 8px 24px -6px rgba(59, 130, 246, 0.2);
+  --shadow-glow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 8px 24px -6px rgba(59, 130, 246, 0.25);
 }
 
-/* UI COLOR THEME: BLUE #25A7DA (Dark) */
+/* UI COLOR THEME: BLUE #25A7DA (Dark) - Deeply Mixed Harmonious Palette */
 .dark[data-color="blue"],
 :root.dark[data-color="blue"],
 [data-color="blue"].dark,
@@ -181,57 +183,59 @@
   --pw-blue: #25a7da;
   --primary: #25a7da;
   --primary-foreground: #ffffff;
-  --background: #0b0f17;
-  --foreground: #f8fafc;
-  --surface: #111827;
-  --surface-2: #1e293b;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --secondary: #0f2330;
+  --background: #05111d;
+  --foreground: #f0f7fe;
+  --surface: #0a1a2a;
+  --surface-2: #0f243a;
+  --card: #081827;
+  --card-foreground: #f0f7fe;
+  --secondary: #0c2338;
   --secondary-foreground: #38bdf8;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #112836;
+  --muted: #0b1f32;
+  --muted-foreground: #7899b3;
+  --accent: #0e2942;
   --accent-foreground: #38bdf8;
-  --border: #1e293b;
+  --border: #143857;
   --ring: #25a7da;
-  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.3), 0 8px 24px -6px rgba(37, 167, 218, 0.2);
+  --shadow-card: 0 4px 24px rgba(37, 167, 218, 0.16), 0 2px 6px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 0 1px rgba(37, 167, 218, 0.45), 0 8px 26px -4px rgba(37, 167, 218, 0.35);
   --gradient-hero: radial-gradient(
-    1200px 520px at 50% -40px,
-    rgba(37, 167, 218, 0.1) 0%,
-    rgba(17, 24, 39, 0.3) 40%,
-    #0b0f17 90%
+    1200px 600px at 50% -50px,
+    rgba(37, 167, 218, 0.28) 0%,
+    rgba(8, 24, 39, 0.9) 45%,
+    #05111d 90%
   );
 }
 
-/* UI COLOR THEME: GREEN #7CFC00 (Dark) */
+/* UI COLOR THEME: GREEN #7CFC00 (Dark) - Deeply Mixed Harmonious Palette */
 .dark[data-color="green"],
 :root.dark[data-color="green"],
 [data-color="green"].dark,
 [data-color="green"] .dark {
   --pw-blue: #7cfc00;
   --primary: #7cfc00;
-  --primary-foreground: #090d16;
-  --background: #0b0f17;
-  --foreground: #f8fafc;
-  --surface: #111827;
-  --surface-2: #1e293b;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --secondary: #1a2e0a;
+  --primary-foreground: #051a05;
+  --background: #041206;
+  --foreground: #f2fef0;
+  --surface: #091e0c;
+  --surface-2: #0e2912;
+  --card: #071a0a;
+  --card-foreground: #f2fef0;
+  --secondary: #0c2610;
   --secondary-foreground: #a3e635;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e380a;
+  --muted: #0b220e;
+  --muted-foreground: #75a271;
+  --accent: #0f3014;
   --accent-foreground: #a3e635;
-  --border: #1e293b;
+  --border: #153f18;
   --ring: #7cfc00;
-  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.35), 0 8px 24px -6px rgba(124, 252, 0, 0.2);
+  --shadow-card: 0 4px 24px rgba(124, 252, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 0 1px rgba(124, 252, 0, 0.5), 0 8px 26px -4px rgba(124, 252, 0, 0.38);
   --gradient-hero: radial-gradient(
-    1200px 520px at 50% -40px,
-    rgba(124, 252, 0, 0.1) 0%,
-    rgba(17, 24, 39, 0.3) 40%,
-    #0b0f17 90%
+    1200px 600px at 50% -50px,
+    rgba(124, 252, 0, 0.26) 0%,
+    rgba(7, 26, 10, 0.9) 45%,
+    #041206 90%
   );
 }
 
