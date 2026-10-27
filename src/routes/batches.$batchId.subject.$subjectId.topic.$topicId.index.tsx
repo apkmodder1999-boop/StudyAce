@@ -22,14 +22,16 @@ import {
 } from "@/lib/api";
 import { Shell, Crumbs, PageTitle, Loading, EmptyBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PDFActionDialog } from "@/components/PDFActionDialog";
 import { formatSimpleDate } from "@/lib/dates";
 
-// Only Lectures, Notes, and DPPs (Test section removed per user request)
+// Supported Content Types: videos, DppVideos, notes, DppNotes, Test
 const TABS: { key: ContentType; label: string }[] = [
-  { key: "Videos", label: "📹 Lectures" },
+  { key: "videos", label: "📹 Lectures" },
   { key: "notes", label: "📝 Notes" },
   { key: "DppNotes", label: "📋 DPP Sheets" },
   { key: "DppVideos", label: "🎬 DPP Videos" },
+  { key: "Test", label: "📝 Test Papers" },
 ];
 
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/topic/$topicId/")({
@@ -68,7 +70,9 @@ function TopicPage() {
         ? "DppVideos"
         : name?.toLowerCase().includes("dpp")
           ? "DppNotes"
-          : "Videos";
+          : name?.toLowerCase().includes("test")
+            ? "Test"
+            : "videos";
   const [tab, setTab] = useState<ContentType>(initialTab);
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
@@ -169,10 +173,10 @@ function TopicPage() {
         <EmptyBox message={`No ${tab.toLowerCase()} published for this chapter yet.`} />
       )}
 
-      {/* Rows for Videos / Notes / DPPs */}
+      {/* Rows for Videos / Notes / DPPs / Tests */}
       <div className="grid gap-3.5">
         {items.map((item, i) => {
-          if (tab === "Videos" || tab === "DppVideos") {
+          if (tab === "videos" || tab === "Videos" || tab === "DppVideos") {
             return (
               <VideoRow
                 key={`${item._id}-${i}`}
@@ -192,34 +196,19 @@ function TopicPage() {
               subjectId={subjectId}
               topicId={topicId}
               isDpp={tab === "DppNotes"}
+              isTest={tab === "Test"}
               onPreviewPdf={(pdf) => setPreviewPdf(pdf)}
             />
           );
         })}
       </div>
 
-      {/* PDF In-App Preview Dialog */}
-      <Dialog open={!!previewPdf} onOpenChange={(open) => !open && setPreviewPdf(null)}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] p-4 sm:p-6 flex flex-col gap-3 bg-card border border-border">
-          <DialogHeader className="flex flex-row items-center justify-between pb-2 border-b border-border">
-            <div className="min-w-0 flex-1 pr-4">
-              <DialogTitle className="text-sm sm:text-base font-semibold text-foreground truncate">
-                {previewPdf?.name ?? "PDF Document"}
-              </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-0.5">In-app document viewer</p>
-            </div>
-          </DialogHeader>
-          <div className="flex-1 w-full h-full min-h-0 bg-muted rounded-lg overflow-hidden border border-border">
-            {previewPdf && (
-              <iframe
-                src={previewPdf.url}
-                className="w-full h-full border-0"
-                title={previewPdf.name}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* PDF Direct Actions Dialog (Do NOT Proxy) */}
+      <PDFActionDialog
+        document={previewPdf}
+        open={Boolean(previewPdf)}
+        onOpenChange={(open) => !open && setPreviewPdf(null)}
+      />
 
       {/* API Endpoint & Session Inspector Dialog */}
       <Dialog open={isApiModalOpen} onOpenChange={setIsApiModalOpen}>
@@ -303,7 +292,9 @@ function VideoRow({
   isDpp?: boolean;
 }) {
   const thumb = item.videoDetails?.image;
-  const targetLectureId = item.videoDetails?._id || item.videoDetails?.id || item._id;
+  // CRITICAL ID RULE: The childId query parameter MUST be the TOP-LEVEL content item ID (item._id from contents array),
+  // NEVER the nested item.videoDetails._id.
+  const targetLectureId = item._id;
   const title =
     item.topic ??
     item.videoDetails?.name ??
@@ -374,6 +365,7 @@ function DocRow({
   subjectId,
   topicId,
   isDpp,
+  isTest,
   onPreviewPdf,
 }: {
   item: ContentItem;
@@ -381,6 +373,7 @@ function DocRow({
   subjectId?: string;
   topicId?: string;
   isDpp?: boolean;
+  isTest?: boolean;
   onPreviewPdf?: (pdf: { name: string; url: string }) => void;
 }) {
   const homeworks =
@@ -397,7 +390,8 @@ function DocRow({
     item.videoDetails?.id ||
     item.url,
   );
-  const solutionVideoId = item.videoDetails?._id || item.videoDetails?.id || item._id;
+  // CRITICAL ID RULE: Use TOP-LEVEL item._id as childId, NEVER the nested videoDetails._id
+  const solutionVideoId = item._id;
 
   if (homeworks.length > 0) {
     return (
@@ -429,7 +423,10 @@ function DocRow({
             });
           }
 
-          const title = hw.topic ?? hwFiles[0]?.name ?? (isDpp ? "DPP Practice Sheet" : "Notes");
+          const title =
+            hw.topic ??
+            hwFiles[0]?.name ??
+            (isTest ? "Question Paper" : isDpp ? "DPP Practice Sheet" : "Notes");
 
           return (
             <div
@@ -439,8 +436,8 @@ function DocRow({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                      {isDpp ? "DPP Study Material" : "Study Material"}
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full">
+                      {isTest ? "Question Paper" : isDpp ? "DPP Study Material" : "Study Material"}
                     </span>
                   </div>
                   <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
@@ -451,35 +448,25 @@ function DocRow({
                     )}
                   </div>
                 </div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/25 shrink-0 shadow-2xs">
-                  <BookOpen className="h-4.5 w-4.5" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/25 shrink-0 shadow-2xs">
+                  <FileText className="h-4.5 w-4.5" />
                 </div>
               </div>
 
               <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
                 {hwFiles.map((f, i) => (
-                  <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
-                    {onPreviewPdf && (
-                      <button
-                        type="button"
-                        onClick={() => onPreviewPdf(f)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
-                      </button>
-                    )}
-                    <a
-                      href={f.url}
-                      download={f.name}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
-                    >
-                      <Download className="h-3 w-3" />
-                      <span>Download</span>
-                    </a>
-                  </div>
+                  <button
+                    key={`${f.url}-${i}`}
+                    type="button"
+                    onClick={() => onPreviewPdf?.(f)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>
+                      {isTest ? "Question Paper" : "Open PDF"} (
+                      {f.name.length > 22 ? `${f.name.slice(0, 20)}…` : f.name})
+                    </span>
+                  </button>
                 ))}
 
                 {/* Watch Video Solution if available */}
@@ -515,15 +502,15 @@ function DocRow({
     item.name ??
     item.homeworkIds?.[0]?.topic ??
     item.videoDetails?.name ??
-    (isDpp ? "DPP Practice Sheet" : "Notes");
+    (isTest ? "Question Paper" : isDpp ? "DPP Practice Sheet" : "Notes");
 
   return (
     <div className="card-surface p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              {isDpp ? "DPP Sheet" : "Chapter Notes"}
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full">
+              {isTest ? "Question Paper" : isDpp ? "DPP Sheet" : "Chapter Notes"}
             </span>
           </div>
           <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
@@ -531,35 +518,25 @@ function DocRow({
             {item.startTime ? formatSimpleDate(item.startTime) : item.status}
           </p>
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary border border-primary/25 shrink-0 shadow-2xs">
-          <BookOpen className="h-4.5 w-4.5" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/25 shrink-0 shadow-2xs">
+          <FileText className="h-4.5 w-4.5" />
         </div>
       </div>
 
       <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
         {files.map((f, i) => (
-          <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
-            {onPreviewPdf && (
-              <button
-                type="button"
-                onClick={() => onPreviewPdf(f)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
-              </button>
-            )}
-            <a
-              href={f.url}
-              download={f.name}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
-            >
-              <Download className="h-3 w-3" />
-              <span>Download</span>
-            </a>
-          </div>
+          <button
+            key={`${f.url}-${i}`}
+            type="button"
+            onClick={() => onPreviewPdf?.(f)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            <span>
+              {isTest ? "Question Paper" : "Open PDF"} (
+              {f.name.length > 22 ? `${f.name.slice(0, 20)}…` : f.name})
+            </span>
+          </button>
         ))}
 
         {/* Watch Solution Video button if available */}

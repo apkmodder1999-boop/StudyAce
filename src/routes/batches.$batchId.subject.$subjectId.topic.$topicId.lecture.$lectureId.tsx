@@ -32,6 +32,7 @@ import {
 } from "@/lib/api";
 import { Shell, Crumbs, ErrorBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PDFActionDialog } from "@/components/PDFActionDialog";
 import { formatSimpleDate } from "@/lib/dates";
 import { useXP } from "@/lib/xp-system";
 import { XPModal } from "@/components/XPModal";
@@ -116,67 +117,34 @@ function LecturePage() {
     },
   });
 
-  // 2. Query direct video stream using a.pimaxer.in/v1/video-url-details?parentId={parentId}&childId={childId}
+  // 2. Query direct video stream using https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}&batchId={batchId}
   const { data: videoData, isLoading: videoLoading } = useQuery({
-    queryKey: [
-      "lecture-video-stream",
-      batchId,
-      lectureId,
-      searchVideoId,
-      itemData?.videoDetails?._id || itemData?.videoDetails?.id,
-    ],
+    queryKey: ["lecture-video-stream", batchId, lectureId, searchVideoId, itemData?._id],
     queryFn: async () => {
-      const targetChildId = searchVideoId || lectureId;
+      // CRITICAL ID RULE: Use TOP-LEVEL content item ID (itemData?._id || lectureId)
+      // NEVER pass nested item.videoDetails._id
+      const topLevelChildId = itemData?._id || lectureId;
 
-      // 1. Primary: Use user-specified endpoint a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={childId}
-      if (batchId && targetChildId) {
-        const vDetails = await fetchVideoUrlDetails(batchId, targetChildId);
+      // 1. Primary: Official PiMaxer video-url-details endpoint
+      if (batchId && topLevelChildId) {
+        const vDetails = await fetchVideoUrlDetails(batchId, topLevelChildId);
         if (vDetails?.videoUrl) return vDetails;
       }
 
-      // 2. Check nested video id with video-url-details
-      const nestedId = itemData?.videoDetails?._id || itemData?.videoDetails?.id;
-      if (batchId && nestedId && nestedId !== targetChildId) {
-        const vNestedDetails = await fetchVideoUrlDetails(batchId, nestedId);
-        if (vNestedDetails?.videoUrl) return vNestedDetails;
-      }
+      // 2. Fallback 1: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
+      const directVideo = await fetchVideoById(topLevelChildId);
+      if (directVideo?.videoUrl) return directVideo;
 
-      // 3. Fallback to fetchVideoById
-      if (searchVideoId) {
-        const vSearch = await fetchVideoById(searchVideoId);
-        if (vSearch?.videoUrl) return vSearch;
-      }
-
-      const vDirect = await fetchVideoById(lectureId);
-      if (vDirect?.videoUrl) return vDirect;
-
-      if (nestedId && nestedId !== lectureId && nestedId !== searchVideoId) {
-        const vNested = await fetchVideoById(nestedId);
-        if (vNested?.videoUrl) return vNested;
-      }
-
-      // 4. Try videoId extracted from itemData?.url or itemData?.videoDetails?.videoUrl
-      const extractedId =
-        extractVideoId(itemData?.url) || extractVideoId(itemData?.videoDetails?.videoUrl);
-      if (extractedId && extractedId !== lectureId && extractedId !== nestedId) {
-        if (batchId) {
-          const vExtDetails = await fetchVideoUrlDetails(batchId, extractedId);
-          if (vExtDetails?.videoUrl) return vExtDetails;
-        }
-        const vExtracted = await fetchVideoById(extractedId);
-        if (vExtracted?.videoUrl) return vExtracted;
-      }
-
-      // 5. Fallback to resolvePlayback
+      // 3. Fallback 2: Direct MP4 stream CDN or resolvePlayback
       const playback = await resolvePlayback(
         batchId,
         subjectId,
-        searchVideoId || lectureId,
+        topLevelChildId,
         itemData?.videoDetails?.videoUrl || itemData?.url,
       );
       if (playback?.src) {
         return {
-          _id: lectureId,
+          _id: topLevelChildId,
           videoUrl: playback.src,
           name: itemData?.topic || itemData?.name || searchTitle,
           duration: itemData?.videoDetails?.duration,
@@ -252,28 +220,12 @@ function LecturePage() {
         />
       )}
 
-      {/* In-App PDF Preview Dialog */}
-      <Dialog open={Boolean(previewPdf)} onOpenChange={(open) => !open && setPreviewPdf(null)}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-border dark:border-slate-800">
-            <div>
-              <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 truncate">
-                {previewPdf?.name}
-              </DialogTitle>
-              <p className="text-[11px] text-muted-foreground mt-0.5">In-app document viewer</p>
-            </div>
-          </DialogHeader>
-          <div className="flex-1 w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950 rounded-lg overflow-hidden border border-border dark:border-slate-800">
-            {previewPdf && (
-              <iframe
-                src={previewPdf.url}
-                className="w-full h-full border-0"
-                title={previewPdf.name}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* PDF Direct Actions Dialog (Do NOT Proxy) */}
+      <PDFActionDialog
+        document={previewPdf}
+        open={Boolean(previewPdf)}
+        onOpenChange={(open) => !open && setPreviewPdf(null)}
+      />
     </Shell>
   );
 }

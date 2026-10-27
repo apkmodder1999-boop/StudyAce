@@ -1,4 +1,4 @@
-export const API_BASE = "http://a.pimaxer.in";
+export const API_BASE = "https://a.pimaxer.in";
 
 export type Batch = {
   _id: string;
@@ -95,7 +95,7 @@ export type ContentItem = {
     | undefined;
 };
 
-export type ContentType = "Videos" | "notes" | "DppNotes" | "DppVideos" | "Test";
+export type ContentType = "videos" | "Videos" | "DppVideos" | "notes" | "DppNotes" | "Test";
 
 export type VideoDetails = {
   _id: string;
@@ -325,7 +325,7 @@ export async function fetchBatchDetails(batchId: string): Promise<{
         endDate?: string;
         previewImage?: unknown;
       };
-    }>(`${API_BASE}/v1/${batchId}/details`);
+    }>(`${API_BASE}/v1/batches/${batchId}/details`);
 
     if (json?.data) {
       return {
@@ -431,16 +431,14 @@ export async function fetchTopicContent(
 
 export const PROXY_STREAM_BASE = "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com";
 
-/** Normalizes stream URL for active page protocol and uses pw-api-proxy per user instruction */
+/** Normalizes stream URL directly to official PiMaxer CDN and HLS streams */
 export function normalizeStreamUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
   let res = url.trim();
   if (res.startsWith("/stream/")) {
-    res = `${PROXY_STREAM_BASE}${res}`;
-  }
-  // User instruction: "BUT INSTEAD OF a.pimaxer.in we will use pw-api-proxy-v1-dc90b930c4fa.herokuapp.com"
-  if (res.includes("a.pimaxer.in/stream/")) {
-    res = res.replace(/https?:\/\/a\.pimaxer\.in\/stream\//i, `${PROXY_STREAM_BASE}/stream/`);
+    res = `https://a.pimaxer.in${res}`;
+  } else if (res.startsWith("http://a.pimaxer.in")) {
+    res = res.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
   }
   return res;
 }
@@ -448,25 +446,18 @@ export function normalizeStreamUrl(url?: string | null): string | undefined {
 /** Provides alternate stream mirror if primary stream fails */
 export function getAlternateStreamUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (url.includes("pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/")) {
-    return url.replace(
-      "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com/stream/",
-      "https://a.pimaxer.in/stream/",
-    );
-  }
-  if (url.includes("a.pimaxer.in/stream/")) {
-    return url.replace(/https?:\/\/a\.pimaxer\.in\/stream\//i, `${PROXY_STREAM_BASE}/stream/`);
+  if (url.includes("/stream/")) {
+    return url;
   }
   return undefined;
 }
 
 /**
- * Direct Video Stream & Metadata Query
- * Tries a.pimaxer.in first, then pw-api-proxy
+ * Stream Fallback 1: Direct Video endpoint: https://a.pimaxer.in/v1/videos/{videoId}
  */
 export async function fetchVideoById(videoId: string): Promise<VideoDetails | null> {
   if (!videoId) return null;
-  // 1. Try a.pimaxer.in
+  // 1. Direct video endpoint: https://a.pimaxer.in/v1/videos/{videoId}
   try {
     const json = await getJSON<{
       success?: boolean;
@@ -484,31 +475,21 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
     // endpoint returned 404 or video not ready
   }
 
-  // 2. Fallback to pw-api-proxy
-  try {
-    const json = await getJSON<{
-      success?: boolean;
-      data?: VideoDetails;
-    }>(`${PROXY_STREAM_BASE}/v1/videos/${videoId}`);
-
-    if (json?.data && (json.data.videoUrl || json.data._id || json.data.id)) {
-      const vid: VideoDetails = { ...json.data };
-      if (vid.videoUrl) {
-        vid.videoUrl = normalizeStreamUrl(vid.videoUrl);
-      }
-      return vid;
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
+  // 2. Stream Fallback 2: Direct MP4 stream CDN: https://a.pimaxer.in/stream/{videoId}/video.mp4
+  return {
+    _id: videoId,
+    videoUrl: `${API_BASE}/stream/${videoId}/video.mp4`,
+    status: "Ready",
+  };
 }
 
 /**
- * Direct Video URL details fetch using user-specified endpoint:
- * Endpoint: http://a.pimaxer.in/v1/video-url-details?parentId={parentId}&childId={childId}
- * Used for video URL fetching and DPP videos (with parentId = batchId, childId = lectureId / dppId)
+ * Official PiMaxer Video & DPP Videos Stream Endpoint:
+ * https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}&batchId={batchId}
+ *
+ * CRITICAL ID RULE: The childId parameter MUST be the TOP-LEVEL content item ID (item._id from contents array),
+ * NEVER the nested item.videoDetails._id. Passing videoDetails._id triggers a 500 Media API failure,
+ * while passing the top-level item._id returns a 200 OK with the multi-resolution HLS stream (https://a.pimaxer.in/v1/hls/{uuid}/index.m3u8).
  */
 export async function fetchVideoUrlDetails(
   parentId: string,
@@ -516,27 +497,19 @@ export async function fetchVideoUrlDetails(
 ): Promise<VideoDetails | null> {
   if (!parentId || !childId) return null;
 
-  // Supplies both parentId and batchId for complete compatibility
+  // Primary URL with parentId, childId (top-level item._id), and batchId
   const params = new URLSearchParams({
     parentId,
     childId,
     batchId: parentId,
   });
 
-  const url = `${API_BASE}/v1/video-url-details?${params.toString()}`;
-
-  let targetUrl = url;
-  if (
-    typeof window !== "undefined" &&
-    window.location.protocol === "https:" &&
-    targetUrl.startsWith("http://a.pimaxer.in")
-  ) {
-    targetUrl = targetUrl.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
-  }
+  const targetUrl = `${API_BASE}/v1/video-url-details?${params.toString()}`;
 
   const customHeaders: Record<string, string> = {
-    accept: "application/json",
-    "client-type": "WEB",
+    Accept: "application/json",
+    "Client-Type": "WEB",
+    Referer: "https://peedablu.com/",
   };
 
   if (typeof window !== "undefined") {
@@ -556,7 +529,7 @@ export async function fetchVideoUrlDetails(
     }
   }
 
-  // 1. Try primary a.pimaxer.in endpoint
+  // 1. Primary official PiMaxer endpoint
   try {
     const res = await fetchWithTimeout(targetUrl, {
       headers: customHeaders,
@@ -565,8 +538,8 @@ export async function fetchVideoUrlDetails(
       const json = await res.json();
       const payload = (json?.data || json) as Record<string, unknown>;
       const rawUrl =
-        (typeof payload["videoUrl"] === "string" ? payload["videoUrl"] : undefined) ||
         (typeof payload["url"] === "string" ? payload["url"] : undefined) ||
+        (typeof payload["videoUrl"] === "string" ? payload["videoUrl"] : undefined) ||
         (typeof payload["streamUrl"] === "string" ? payload["streamUrl"] : undefined) ||
         (typeof payload["hlsUrl"] === "string" ? payload["hlsUrl"] : undefined) ||
         (typeof (payload["videoDetails"] as Record<string, unknown>)?.["videoUrl"] === "string"
@@ -587,45 +560,21 @@ export async function fetchVideoUrlDetails(
       }
     }
   } catch (err) {
-    console.warn(`[video-url-details] Failed to query ${targetUrl}:`, err);
+    console.warn(`[video-url-details] Primary query failed for ${targetUrl}:`, err);
   }
 
-  // 2. Try proxy stream base as fallback mirror
-  try {
-    const proxyUrl = `${PROXY_STREAM_BASE}/v1/video-url-details?${params.toString()}`;
-    const resProxy = await fetchWithTimeout(proxyUrl, {
-      headers: customHeaders,
-    });
-    if (resProxy.ok) {
-      const json = await resProxy.json();
-      const payload = (json?.data || json) as Record<string, unknown>;
-      const rawUrl =
-        (typeof payload["videoUrl"] === "string" ? payload["videoUrl"] : undefined) ||
-        (typeof payload["url"] === "string" ? payload["url"] : undefined) ||
-        (typeof payload["streamUrl"] === "string" ? payload["streamUrl"] : undefined) ||
-        (typeof payload["hlsUrl"] === "string" ? payload["hlsUrl"] : undefined) ||
-        (typeof (payload["videoDetails"] as Record<string, unknown>)?.["videoUrl"] === "string"
-          ? ((payload["videoDetails"] as Record<string, unknown>)["videoUrl"] as string)
-          : undefined);
-
-      if (rawUrl) {
-        return {
-          _id: String(payload["_id"] || payload["id"] || childId),
-          id: String(payload["id"] || payload["_id"] || childId),
-          name: typeof payload["name"] === "string" ? payload["name"] : undefined,
-          videoUrl: normalizeStreamUrl(rawUrl),
-          duration: typeof payload["duration"] === "string" ? payload["duration"] : undefined,
-          status: typeof payload["status"] === "string" ? payload["status"] : "Ready",
-          image: typeof payload["image"] === "string" ? payload["image"] : undefined,
-          types: Array.isArray(payload["types"]) ? (payload["types"] as string[]) : undefined,
-        };
-      }
-    }
-  } catch {
-    // ignore
+  // Stream Fallback 1: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
+  const fallbackDirect = await fetchVideoById(childId);
+  if (fallbackDirect?.videoUrl) {
+    return fallbackDirect;
   }
 
-  return null;
+  // Stream Fallback 2: Direct MP4 stream CDN https://a.pimaxer.in/stream/{streamUuid}/video.mp4
+  return {
+    _id: childId,
+    videoUrl: `${API_BASE}/stream/${childId}/video.mp4`,
+    status: "Ready",
+  };
 }
 
 /** Extracts an ID or alphanumeric UUID from a URL */
