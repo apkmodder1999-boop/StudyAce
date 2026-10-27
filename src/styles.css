@@ -37,42 +37,75 @@
 
 :root {
   --radius: 0.75rem;
-  /* User-Requested PW Color Theme */
-  --pw-blue: #2563eb;
-  --pw-navy: #111827;
-  --pw-dark: #1e293b;
+  /* UI COLOR THEME: WHITE & LIGHT YELLOW (DEFAULT) */
+  --pw-blue: #eab308;
+  --pw-navy: #1c1917;
+  --pw-dark: #292524;
   --pw-gold: #f59e0b;
   --pw-red: #ef4444;
   --pw-green: #10b981;
   --pw-chalk: #2d6a4f;
-  --pw-bg: #f8fafc;
+  --pw-bg: #fffdf5;
 
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #fffdf5;
+  --foreground: #1c1917;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
+  --surface-2: #fef9db;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1c1917;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #eff6ff;
-  --secondary-foreground: #2563eb;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eff6ff;
-  --accent-foreground: #2563eb;
+  --popover-foreground: #1c1917;
+  --primary: #eab308;
+  --primary-foreground: #1c1917;
+  --secondary: #fef3c7;
+  --secondary-foreground: #78350f;
+  --muted: #fefce8;
+  --muted-foreground: #78716c;
+  --accent: #fef08a;
+  --accent-foreground: #854d0e;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --success: #10b981;
-  --border: #e2e8f0;
-  --input: #cbd5e1;
-  --ring: #2563eb;
-  --pw-badge: #111827;
-  --gradient-hero: radial-gradient(1200px 520px at 50% -40px, #dbeafe 0%, #eff6ff 35%, #f8fafc 80%);
-  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 8px 24px -6px rgba(37, 99, 235, 0.18);
+  --border: #fde047;
+  --input: #fef08a;
+  --ring: #eab308;
+  --pw-badge: #1c1917;
+  --gradient-hero: radial-gradient(
+    1200px 580px at 50% -50px,
+    rgba(254, 240, 138, 0.45) 0%,
+    rgba(254, 252, 232, 0.6) 40%,
+    #fffdf5 85%
+  );
+  --shadow-card: 0 4px 20px rgba(234, 179, 8, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 0 1px rgba(234, 179, 8, 0.4), 0 8px 24px -4px rgba(234, 179, 8, 0.25);
+}
+
+/* UI COLOR THEME: YELLOW (Light) - White + Light Yellow */
+:root[data-color="yellow"] {
+  --pw-blue: #eab308;
+  --primary: #eab308;
+  --primary-foreground: #1c1917;
+  --background: #fffdf5;
+  --surface: #ffffff;
+  --surface-2: #fef9db;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --secondary: #fef3c7;
+  --secondary-foreground: #78350f;
+  --muted: #fefce8;
+  --muted-foreground: #78716c;
+  --accent: #fef08a;
+  --accent-foreground: #854d0e;
+  --border: #fde047;
+  --ring: #eab308;
+  --shadow-card: 0 4px 20px rgba(234, 179, 8, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 0 1px rgba(234, 179, 8, 0.4), 0 8px 24px -4px rgba(234, 179, 8, 0.25);
+  --gradient-hero: radial-gradient(
+    1200px 580px at 50% -50px,
+    rgba(254, 240, 138, 0.45) 0%,
+    rgba(254, 252, 232, 0.6) 40%,
+    #fffdf5 85%
+  );
 }
 
 /* UI COLOR THEME: BLUE #25A7DA (Light) - Deeply Mixed Harmonious Palette */
@@ -173,6 +206,38 @@
   );
   --shadow-card: 0 2px 8px 0 rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 8px 24px -6px rgba(59, 130, 246, 0.25);
+}
+
+/* UI COLOR THEME: YELLOW (Dark) - Deep Warm Gold & Charcoal */
+.dark[data-color="yellow"],
+:root.dark[data-color="yellow"],
+[data-color="yellow"].dark,
+[data-color="yellow"] .dark {
+  --pw-blue: #facc15;
+  --primary: #facc15;
+  --primary-foreground: #1c1917;
+  --background: #14120b;
+  --foreground: #fefce8;
+  --surface: #1e1b13;
+  --surface-2: #2a2517;
+  --card: #1c1912;
+  --card-foreground: #fefce8;
+  --secondary: #383017;
+  --secondary-foreground: #fef08a;
+  --muted: #242015;
+  --muted-foreground: #a8a29e;
+  --accent: #3b321a;
+  --accent-foreground: #fde047;
+  --border: #42391e;
+  --ring: #facc15;
+  --shadow-card: 0 4px 24px rgba(250, 204, 21, 0.15), 0 2px 6px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 8px 26px -4px rgba(250, 204, 21, 0.35);
+  --gradient-hero: radial-gradient(
+    1200px 600px at 50% -50px,
+    rgba(250, 204, 21, 0.18) 0%,
+    rgba(28, 25, 18, 0.9) 45%,
+    #14120b 90%
+  );
 }
 
 /* UI COLOR THEME: BLUE #25A7DA (Dark) - Deeply Mixed Harmonious Palette */

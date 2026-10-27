@@ -1,50 +1,26 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Menu,
-  X,
-  Gift,
-  Flame,
-  Bell,
-  Send,
-  Moon,
-  Users,
-  Info,
-  PhoneCall,
-  LogOut,
-  BookOpen,
-  LayoutGrid,
-  BookmarkCheck,
-  Zap,
-} from "lucide-react";
+import { Menu, X, Send, Moon, LayoutGrid, BookmarkCheck, Check } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { useTheme } from "@/hooks/use-theme";
-import { XPModal, XPEarnedToast } from "@/components/XPModal";
 import { EnrollmentToast } from "@/components/EnrollmentToast";
 import { UIColorPicker, UIColorPickerMobile } from "@/components/UIColorPicker";
-import { useXP } from "@/lib/xp-system";
 import { useEnrollment } from "@/lib/enrollment-system";
-import { PWModal, type ModalType } from "@/components/PWModals";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { isDark, toggleTheme } = useTheme();
-  const [isXpModalOpen, setIsXpModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const { totalXp, streakDays, isMounted } = useXP();
-  const { enrolledCount } = useEnrollment();
+  const { enrolledCount, isMounted } = useEnrollment();
 
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const currentSearch = routerState.location.search as { tab?: string };
 
-  const isBatchesActive =
+  const isEnrolledActive = currentSearch.tab === "enrolled";
+  const isAllBatchesActive =
     currentPath.startsWith("/batches") ||
-    currentSearch.tab === "batches" ||
-    currentSearch.tab === "all";
-  const isStudyActive =
-    (currentPath === "/" && !currentSearch.tab) ||
-    currentSearch.tab === "study" ||
-    currentSearch.tab === "enrolled";
+    !currentSearch.tab ||
+    currentSearch.tab === "all" ||
+    currentSearch.tab === "batches";
 
   // Prevent body scrolling when sidebar drawer is open & handle Escape key
   useEffect(() => {
@@ -71,7 +47,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary transition-colors duration-200 pb-20">
-      {/* PW GLOBAL SIDEBAR DRAWER (REFINED & FULLY FUNCTIONAL) */}
+      {/* PW GLOBAL SIDEBAR DRAWER */}
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 ${
           isSidebarOpen
@@ -81,31 +57,24 @@ export function Shell({ children }: { children: ReactNode }) {
         onClick={() => setIsSidebarOpen(false)}
       >
         <div
-          className={`absolute top-0 left-0 bottom-0 w-[85%] max-w-[320px] bg-card border-r border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out z-50 ${
+          className={`absolute top-0 left-0 bottom-0 w-[85%] max-w-[300px] bg-card border-r border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out z-50 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* PROFILE HEADER */}
-          <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
+          {/* PROFILE / BRAND HEADER */}
+          <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-full bg-emerald-500/15 border-2 border-emerald-500/40 flex items-center justify-center text-xl shadow-xs">
+              <div className="h-10 w-10 rounded-full bg-primary/15 border-2 border-primary/40 flex items-center justify-center text-lg shadow-xs">
                 🎓
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-foreground leading-tight">
-                  Hi, Aspirant
+                  Physics Wallah
                 </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSidebarNav();
-                    setTimeout(() => setActiveModal("profile"), 150);
-                  }}
-                  className="text-xs text-primary hover:underline transition cursor-pointer font-semibold"
-                >
-                  View profile
-                </button>
+                <span className="text-[11px] text-muted-foreground font-semibold">
+                  Aspirant Portal
+                </span>
               </div>
             </div>
 
@@ -120,19 +89,19 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
 
           {/* SIDEBAR BODY ITEMS */}
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
-            {/* Join Telegram ✨ (Direct Link) */}
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+            {/* Join Telegram (Direct Link) */}
             <a
               href="https://t.me/+7htXdqnvL0JiYjc1"
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleSidebarNav}
-              className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-primary/15 via-primary/5 to-transparent border border-primary/30 p-3 text-left transition hover:scale-[1.01] cursor-pointer group shadow-2xs"
+              className="w-full flex items-center justify-between rounded-xl bg-gradient-to-r from-primary/15 via-primary/5 to-transparent border border-primary/30 p-3 text-left transition hover:scale-[1.01] cursor-pointer group shadow-2xs"
               title="Join Official Telegram"
             >
               <div className="flex items-center gap-2.5">
                 <Send className="h-4 w-4 text-primary" />
-                <span className="text-xs font-extrabold text-primary">Join Telegram ✨</span>
+                <span className="text-xs font-extrabold text-primary">Join Telegram Channel</span>
               </div>
               <span className="text-xs text-primary font-bold group-hover:translate-x-0.5 transition">
                 &gt;
@@ -140,31 +109,21 @@ export function Shell({ children }: { children: ReactNode }) {
             </a>
 
             {/* DIRECT NAVIGATION SECTION */}
-            <div className="space-y-1 pt-1">
+            <div className="space-y-1">
               <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 pb-1">
-                Navigation
+                Batches
               </div>
-
-              {/* Study Zone */}
-              <Link
-                to="/"
-                search={{ tab: "study" }}
-                onClick={handleSidebarNav}
-                className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-foreground hover:bg-muted hover:text-primary transition"
-              >
-                <div className="flex items-center gap-2.5">
-                  <BookOpen className="h-4 w-4 text-primary" />
-                  <span>Study Zone</span>
-                </div>
-                <span className="text-[10px] text-muted-foreground">&gt;</span>
-              </Link>
 
               {/* All Batches */}
               <Link
                 to="/"
-                search={{ tab: "batches" }}
+                search={{ tab: "all" }}
                 onClick={handleSidebarNav}
-                className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-foreground hover:bg-muted hover:text-primary transition"
+                className={`w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition ${
+                  isAllBatchesActive && !isEnrolledActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted hover:text-primary"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <LayoutGrid className="h-4 w-4 text-primary" />
@@ -178,7 +137,11 @@ export function Shell({ children }: { children: ReactNode }) {
                 to="/"
                 search={{ tab: "enrolled" }}
                 onClick={handleSidebarNav}
-                className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-foreground hover:bg-muted hover:text-primary transition"
+                className={`w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold transition ${
+                  isEnrolledActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground hover:bg-muted hover:text-primary"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <BookmarkCheck className="h-4 w-4 text-primary" />
@@ -186,35 +149,14 @@ export function Shell({ children }: { children: ReactNode }) {
                 </div>
                 <span
                   suppressHydrationWarning
-                  className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-mono font-bold"
+                  className="rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] font-mono font-bold"
                 >
                   {isMounted ? enrolledCount : 0}
                 </span>
               </Link>
-
-              {/* XP Status */}
-              <button
-                type="button"
-                onClick={() => {
-                  handleSidebarNav();
-                  setTimeout(() => setIsXpModalOpen(true), 150);
-                }}
-                className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-foreground hover:bg-muted hover:text-primary transition cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
-                  <span>XP & Level Status</span>
-                </div>
-                <span
-                  suppressHydrationWarning
-                  className="rounded-full bg-amber-500/15 text-amber-500 px-2 py-0.5 text-[10px] font-mono font-bold"
-                >
-                  {isMounted ? totalXp : 0} XP
-                </span>
-              </button>
             </div>
 
-            {/* Dark Mode Switch (Clickable Row) */}
+            {/* Dark Mode Switch */}
             <div
               onClick={toggleTheme}
               className="flex items-center justify-between p-3 rounded-xl hover:bg-muted cursor-pointer transition select-none border border-border/60"
@@ -243,130 +185,75 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
               <UIColorPickerMobile />
             </div>
-
-            {/* Support & Community Links */}
-            <div className="space-y-0.5 border-t border-border/80 pt-2 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  handleSidebarNav();
-                  setTimeout(() => setActiveModal("refer"), 150);
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-foreground hover:bg-muted transition text-left cursor-pointer font-semibold"
-              >
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>Refer & Share</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  handleSidebarNav();
-                  setTimeout(() => setActiveModal("about"), 150);
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-foreground hover:bg-muted transition text-left cursor-pointer font-semibold"
-              >
-                <Info className="h-4 w-4 text-muted-foreground" />
-                <span>About Us</span>
-              </button>
-
-              <a
-                href="https://t.me/+7htXdqnvL0JiYjc1"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleSidebarNav}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-foreground hover:bg-muted transition text-left cursor-pointer font-semibold"
-              >
-                <PhoneCall className="h-4 w-4 text-muted-foreground" />
-                <span>Help & Support</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => {
-                  handleSidebarNav();
-                  setTimeout(() => setActiveModal("profile"), 150);
-                }}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-rose-500 hover:bg-rose-500/10 transition text-left cursor-pointer font-semibold mt-1"
-              >
-                <LogOut className="h-4 w-4 text-rose-500" />
-                <span>Logout</span>
-              </button>
-            </div>
           </div>
 
           {/* SIDEBAR FOOTER */}
           <div className="p-4 bg-muted/30 border-t border-border text-[11px] text-muted-foreground">
             <p className="font-semibold text-foreground">Physics Wallah</p>
-            <p className="mt-0.5">App Version: 1.0.0 · Made with ❤️ in India</p>
+            <p className="mt-0.5">Official Student Learning Portal</p>
           </div>
         </div>
       </div>
 
       {/* TOP HEADER */}
-      <header className="sticky top-0 z-30 bg-[#13122b] text-white border-b border-white/10 shadow-md">
+      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md text-foreground border-b border-border shadow-xs transition-colors">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3">
-          {/* Left: Hamburger */}
-          <div className="flex items-center gap-2">
+          {/* Left: Hamburger & Brand Name */}
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              className="h-9 w-9 rounded-full hover:bg-white/10 flex items-center justify-center text-white transition cursor-pointer"
+              className="h-9 w-9 rounded-full hover:bg-muted flex items-center justify-center text-foreground transition cursor-pointer"
               title="Open Menu"
               aria-label="Open Menu"
             >
               <Menu className="h-5 w-5" />
             </button>
+
+            <Link
+              to="/"
+              search={{ tab: "all" }}
+              className="flex items-center gap-2 hover:opacity-90 transition"
+            >
+              <div className="h-7 w-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-xs">
+                PW
+              </div>
+              <span className="font-black text-sm sm:text-base tracking-tight text-foreground hidden sm:inline">
+                Physics Wallah
+              </span>
+            </Link>
           </div>
 
-          {/* Right Icons: Gift, Streak, XP, Bell, UI Color Circle */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            {/* 🎁 Gift / Rewards */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("rewards")}
-              className="h-8 w-8 rounded-full hover:bg-white/10 flex items-center justify-center text-amber-400 transition cursor-pointer"
-              title="PW Rewards & Daily Study Perks"
+          {/* Right: Enrolled Count Pill, Telegram, & UI Color Picker */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <Link
+              to="/"
+              search={{ tab: "enrolled" }}
+              className="flex items-center gap-1.5 rounded-full bg-primary/10 hover:bg-primary/20 px-3 py-1 text-xs font-bold text-foreground transition border border-primary/20"
+              title="View Enrolled Batches"
             >
-              <Gift className="h-4 w-4" />
-            </button>
+              <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
+              <span>My Batches</span>
+              <span
+                suppressHydrationWarning
+                className="ml-0.5 rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-mono font-black"
+              >
+                {isMounted ? enrolledCount : 0}
+              </span>
+            </Link>
 
-            {/* 🔥 Streak Flame Counter */}
-            <button
-              type="button"
-              onClick={() => setIsXpModalOpen(true)}
-              className="flex items-center gap-1 text-white hover:text-amber-400 transition cursor-pointer text-xs font-bold font-mono"
-              title="Study Streak Days"
-              suppressHydrationWarning
+            {/* Telegram Channel Shortcut */}
+            <a
+              href="https://t.me/+7htXdqnvL0JiYjc1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition cursor-pointer"
+              title="Join Telegram Channel"
             >
-              <Flame className="h-4 w-4 text-amber-500 fill-amber-500" />
-              <span>{isMounted ? streakDays : 0}</span>
-            </button>
+              <Send className="h-4 w-4" />
+            </a>
 
-            {/* XP Badge Pill */}
-            <button
-              type="button"
-              onClick={() => setIsXpModalOpen(true)}
-              className="rounded-full bg-white/10 hover:bg-white/20 px-2.5 py-0.5 text-[11px] font-bold font-mono text-white transition cursor-pointer flex items-center gap-1 border border-white/10"
-              title="Student XP & Level"
-              suppressHydrationWarning
-            >
-              <span className="text-[10px] text-amber-400">XP</span>
-              <span>{isMounted ? totalXp : 0}</span>
-            </button>
-
-            {/* 🔔 Notification Bell */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("notices")}
-              className="relative h-8 w-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white transition cursor-pointer"
-              title="Notices & Announcements"
-            >
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[#13122b]" />
-            </button>
-
-            {/* 🎨 UI Colour Selector Trigger (Top-Right Circle) */}
+            {/* UI Colour Selector Trigger */}
             <UIColorPicker />
           </div>
         </div>
@@ -375,46 +262,46 @@ export function Shell({ children }: { children: ReactNode }) {
       {/* MAIN VIEW CONTENT */}
       <main className="mx-auto max-w-[1100px] px-3.5 sm:px-4 pt-3 sm:pt-4">{children}</main>
 
-      {/* FIXED BOTTOM NAVIGATION BAR (CLEAN 3-TAB LAYOUT) */}
+      {/* FIXED BOTTOM NAVIGATION BAR */}
       <nav
         aria-label="Bottom Navigation"
         className="fixed bottom-0 left-0 right-0 z-40 bg-card/98 backdrop-blur-md border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
       >
         <div className="mx-auto max-w-md flex items-center justify-around py-1.5 px-3">
-          {/* Tab 1: Study */}
+          {/* Tab 1: All Batches */}
           <Link
             to="/"
-            search={{ tab: "study" }}
+            search={{ tab: "all" }}
             className={`flex flex-col items-center justify-center py-1 px-4 text-[11px] font-bold transition-all relative ${
-              isStudyActive
-                ? "text-primary font-black"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <BookOpen
-              className={`h-5 w-5 mb-0.5 ${isStudyActive ? "stroke-[2.5]" : "stroke-[2]"}`}
-            />
-            <span>Study</span>
-            {isStudyActive && (
-              <span className="absolute bottom-0 w-8 h-0.5 bg-primary rounded-full" />
-            )}
-          </Link>
-
-          {/* Tab 2: Batches */}
-          <Link
-            to="/"
-            search={{ tab: "batches" }}
-            className={`flex flex-col items-center justify-center py-1 px-4 text-[11px] font-bold transition-all relative ${
-              isBatchesActive && !isStudyActive
+              isAllBatchesActive && !isEnrolledActive
                 ? "text-primary font-black"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <LayoutGrid
-              className={`h-5 w-5 mb-0.5 ${isBatchesActive && !isStudyActive ? "stroke-[2.5]" : "stroke-[2]"}`}
+              className={`h-5 w-5 mb-0.5 ${isAllBatchesActive && !isEnrolledActive ? "stroke-[2.5]" : "stroke-[2]"}`}
             />
-            <span>Batches</span>
-            {isBatchesActive && !isStudyActive && (
+            <span>All Batches</span>
+            {isAllBatchesActive && !isEnrolledActive && (
+              <span className="absolute bottom-0 w-8 h-0.5 bg-primary rounded-full" />
+            )}
+          </Link>
+
+          {/* Tab 2: My Batches (Enrolled) */}
+          <Link
+            to="/"
+            search={{ tab: "enrolled" }}
+            className={`flex flex-col items-center justify-center py-1 px-4 text-[11px] font-bold transition-all relative ${
+              isEnrolledActive
+                ? "text-primary font-black"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookmarkCheck
+              className={`h-5 w-5 mb-0.5 ${isEnrolledActive ? "stroke-[2.5]" : "stroke-[2]"}`}
+            />
+            <span>My Batches</span>
+            {isEnrolledActive && (
               <span className="absolute bottom-0 w-8 h-0.5 bg-primary rounded-full" />
             )}
           </Link>
@@ -431,15 +318,6 @@ export function Shell({ children }: { children: ReactNode }) {
           </a>
         </div>
       </nav>
-
-      {/* PW Custom Modals */}
-      <PWModal type={activeModal} onClose={() => setActiveModal(null)} />
-
-      {/* PW XP Profile & Level Status Modal */}
-      <XPModal isOpen={isXpModalOpen} onClose={() => setIsXpModalOpen(false)} />
-
-      {/* Real-Time Micro Toast when XP increases */}
-      <XPEarnedToast />
 
       {/* Real-Time Micro Toast when Batch Enrolled / Unenrolled */}
       <EnrollmentToast />

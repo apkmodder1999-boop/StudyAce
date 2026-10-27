@@ -20,6 +20,7 @@ import {
   PROXY_STREAM_BASE,
   fetchContent,
   fetchVideoById,
+  fetchVideoUrlDetails,
   itemAttachments,
   normalizeStreamUrl,
   getAlternateStreamUrl,
@@ -79,6 +80,8 @@ function LecturePage() {
       const pages = await Promise.all([
         fetchContent(batchId, subjectId, "Videos", topicId, 1),
         fetchContent(batchId, subjectId, "Videos", topicId, 2),
+        fetchContent(batchId, subjectId, "DppVideos", topicId, 1),
+        fetchContent(batchId, subjectId, "DppNotes", topicId, 1),
       ]);
       const all = pages.flat();
       const match = all.find(
@@ -92,43 +95,61 @@ function LecturePage() {
       );
       if (match) return match;
 
-      // Fallback: untagged videos
-      const untagged = await fetchContent(batchId, subjectId, "Videos", undefined, 1);
+      // Fallback: untagged videos and DPP videos
+      const untagged = await Promise.all([
+        fetchContent(batchId, subjectId, "Videos", undefined, 1),
+        fetchContent(batchId, subjectId, "DppVideos", undefined, 1),
+      ]);
       return (
-        untagged.find(
-          (i) =>
-            i._id === lectureId ||
-            i._id === searchVideoId ||
-            i.videoDetails?._id === lectureId ||
-            i.videoDetails?._id === searchVideoId ||
-            i.videoDetails?.id === lectureId ||
-            i.videoDetails?.id === searchVideoId,
-        ) ?? null
+        untagged
+          .flat()
+          .find(
+            (i) =>
+              i._id === lectureId ||
+              i._id === searchVideoId ||
+              i.videoDetails?._id === lectureId ||
+              i.videoDetails?._id === searchVideoId ||
+              i.videoDetails?.id === lectureId ||
+              i.videoDetails?.id === searchVideoId,
+          ) ?? null
       );
     },
   });
 
-  // 2. Query direct video stream from proxy or resolution
+  // 2. Query direct video stream using a.pimaxer.in/v1/video-url-details?parentId={parentId}&childId={childId}
   const { data: videoData, isLoading: videoLoading } = useQuery({
     queryKey: [
       "lecture-video-stream",
+      batchId,
       lectureId,
       searchVideoId,
       itemData?.videoDetails?._id || itemData?.videoDetails?.id,
     ],
     queryFn: async () => {
-      // 1. If explicit videoId passed in search, query directly
+      const targetChildId = searchVideoId || lectureId;
+
+      // 1. Primary: Use user-specified endpoint a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={childId}
+      if (batchId && targetChildId) {
+        const vDetails = await fetchVideoUrlDetails(batchId, targetChildId);
+        if (vDetails?.videoUrl) return vDetails;
+      }
+
+      // 2. Check nested video id with video-url-details
+      const nestedId = itemData?.videoDetails?._id || itemData?.videoDetails?.id;
+      if (batchId && nestedId && nestedId !== targetChildId) {
+        const vNestedDetails = await fetchVideoUrlDetails(batchId, nestedId);
+        if (vNestedDetails?.videoUrl) return vNestedDetails;
+      }
+
+      // 3. Fallback to fetchVideoById
       if (searchVideoId) {
         const vSearch = await fetchVideoById(searchVideoId);
         if (vSearch?.videoUrl) return vSearch;
       }
 
-      // 2. Query direct lectureId (if it's already a video ID)
       const vDirect = await fetchVideoById(lectureId);
       if (vDirect?.videoUrl) return vDirect;
 
-      // 3. Try itemData.videoDetails._id or id if available
-      const nestedId = itemData?.videoDetails?._id || itemData?.videoDetails?.id;
       if (nestedId && nestedId !== lectureId && nestedId !== searchVideoId) {
         const vNested = await fetchVideoById(nestedId);
         if (vNested?.videoUrl) return vNested;
@@ -138,6 +159,10 @@ function LecturePage() {
       const extractedId =
         extractVideoId(itemData?.url) || extractVideoId(itemData?.videoDetails?.videoUrl);
       if (extractedId && extractedId !== lectureId && extractedId !== nestedId) {
+        if (batchId) {
+          const vExtDetails = await fetchVideoUrlDetails(batchId, extractedId);
+          if (vExtDetails?.videoUrl) return vExtDetails;
+        }
         const vExtracted = await fetchVideoById(extractedId);
         if (vExtracted?.videoUrl) return vExtracted;
       }

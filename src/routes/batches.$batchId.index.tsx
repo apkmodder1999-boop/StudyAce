@@ -7,7 +7,6 @@ import {
   BookOpen,
   Search,
   ArrowRight,
-  User,
   BookmarkCheck,
   Check,
   Plus,
@@ -254,20 +253,13 @@ function BatchPage() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredSubjects.map((s) => {
                   const img = subjectImage(s);
-                  const teacher = s.teacherIds?.[0];
-                  const teacherName =
-                    typeof teacher === "string"
-                      ? teacher
-                      : teacher?.firstName
-                        ? `${teacher.firstName} ${teacher.lastName ?? ""}`.trim()
-                        : undefined;
 
                   return (
                     <Link
                       key={s._id}
                       to="/batches/$batchId/subject/$subjectId"
                       params={{ batchId, subjectId: s._id }}
-                      className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-primary/30 hover:border-primary/70 transition-all hover:shadow-xl hover:shadow-primary/15 rounded-2xl"
+                      className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-border hover:border-primary transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl"
                     >
                       <div className="flex items-center gap-3.5 min-w-0 flex-1">
                         {img ? (
@@ -275,10 +267,10 @@ function BatchPage() {
                             src={img}
                             alt={s.subject}
                             loading="lazy"
-                            className="h-13 w-13 rounded-xl object-cover bg-muted flex-none border border-primary/20 shadow-xs"
+                            className="h-13 w-13 rounded-xl object-cover bg-muted flex-none border border-border shadow-xs"
                           />
                         ) : (
-                          <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-primary/15 text-primary border border-primary/30 font-black text-base shadow-2xs">
+                          <div className="grid h-13 w-13 flex-none place-items-center rounded-xl bg-primary/15 text-primary border border-border font-black text-base shadow-2xs">
                             {s.subject?.[0] ?? "S"}
                           </div>
                         )}
@@ -287,20 +279,13 @@ function BatchPage() {
                           <h3 className="truncate text-sm font-bold text-foreground group-hover:text-primary transition">
                             {s.subject}
                           </h3>
-                          {teacherName ? (
-                            <p className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground font-medium">
-                              <User className="h-3 w-3 text-primary flex-none" />
-                              <span className="truncate">{teacherName}</span>
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              Chapter lectures & notes
-                            </p>
-                          )}
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            Chapter lectures & notes
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
+                      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
                         <ArrowRight className="h-4 w-4" />
                       </div>
                     </Link>

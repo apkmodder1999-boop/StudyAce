@@ -78,17 +78,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Batches — Eduzex · Physics Wallah" },
+      { title: "Physics Wallah — PW Official Learning Portal" },
       {
         name: "description",
         content:
-          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
+          "Explore official batches, recorded video lectures, DPP sheets, and handwritten notes on Physics Wallah.",
       },
-      { property: "og:title", content: "Batches — Eduzex · Physics Wallah" },
+      { property: "og:title", content: "Physics Wallah — PW Official Learning Portal" },
       {
         property: "og:description",
         content:
-          "Explore online and offline batches for JEE, NEET, Class 11, Class 12, and Foundation exams on Eduzex.",
+          "Explore official batches, recorded video lectures, DPP sheets, and handwritten notes on Physics Wallah.",
       },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Physics Wallah" },
@@ -132,7 +132,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}else{document.documentElement.classList.remove("dark")};var c=localStorage.getItem("ui-color")||"blue";if(c==="green"){document.documentElement.setAttribute("data-color","green");document.documentElement.style.setProperty("--primary","#7cfc00");document.documentElement.style.setProperty("--pw-blue","#7cfc00");document.documentElement.style.setProperty("--ring","#7cfc00");document.documentElement.style.setProperty("--primary-foreground","#090d16");}else if(c==="default"){document.documentElement.setAttribute("data-color","default");document.documentElement.style.setProperty("--primary","#2563eb");document.documentElement.style.setProperty("--pw-blue","#2563eb");document.documentElement.style.setProperty("--ring","#2563eb");document.documentElement.style.setProperty("--primary-foreground","#ffffff");}else{document.documentElement.setAttribute("data-color","blue");document.documentElement.style.setProperty("--primary","#25a7da");document.documentElement.style.setProperty("--pw-blue","#25a7da");document.documentElement.style.setProperty("--ring","#25a7da");document.documentElement.style.setProperty("--primary-foreground","#ffffff");}}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"){document.documentElement.classList.add("dark")}else{document.documentElement.classList.remove("dark")};var c=localStorage.getItem("ui-color")||"yellow";if(c==="blue"){document.documentElement.setAttribute("data-color","blue");document.documentElement.style.setProperty("--primary","#25a7da");document.documentElement.style.setProperty("--pw-blue","#25a7da");document.documentElement.style.setProperty("--ring","#25a7da");document.documentElement.style.setProperty("--primary-foreground","#ffffff");}else if(c==="green"){document.documentElement.setAttribute("data-color","green");document.documentElement.style.setProperty("--primary","#7cfc00");document.documentElement.style.setProperty("--pw-blue","#7cfc00");document.documentElement.style.setProperty("--ring","#7cfc00");document.documentElement.style.setProperty("--primary-foreground","#090d16");}else if(c==="default"){document.documentElement.setAttribute("data-color","default");document.documentElement.style.setProperty("--primary","#2563eb");document.documentElement.style.setProperty("--pw-blue","#2563eb");document.documentElement.style.setProperty("--ring","#2563eb");document.documentElement.style.setProperty("--primary-foreground","#ffffff");}else{document.documentElement.setAttribute("data-color","yellow");document.documentElement.style.setProperty("--primary","#eab308");document.documentElement.style.setProperty("--pw-blue","#eab308");document.documentElement.style.setProperty("--ring","#eab308");document.documentElement.style.setProperty("--primary-foreground","#1c1917");}}catch(e){}})()`,
           }}
         />
       </head>

@@ -82,10 +82,10 @@ function SubjectPage() {
             to="/batches/$batchId/subject/$subjectId/topic/$topicId"
             params={{ batchId, subjectId, topicId: t._id }}
             search={{ name: t.name, slug: t.slug }}
-            className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-primary/30 hover:border-primary/70 hover:shadow-xl hover:shadow-primary/15 transition-all rounded-2xl"
+            className="group card-surface flex items-center justify-between gap-4 p-4.5 bg-card border border-border hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all duration-200 rounded-2xl"
           >
             <div className="flex items-start gap-3.5 min-w-0 flex-1">
-              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-xs font-black text-primary border border-primary/30 shadow-2xs">
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-xs font-black text-primary border border-border shadow-2xs">
                 {idx + 1}
               </span>
               <div className="min-w-0 flex-1">
@@ -115,7 +115,7 @@ function SubjectPage() {
               </div>
             </div>
 
-            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-primary/15 text-primary transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
+            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-muted text-muted-foreground transition-all group-hover:bg-primary group-hover:text-primary-foreground shadow-xs group-hover:scale-105">
               <ArrowRight className="h-4 w-4" />
             </div>
           </Link>

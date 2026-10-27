@@ -13,6 +13,7 @@ import {
   Download,
 } from "lucide-react";
 import {
+  API_BASE,
   fetchTopicContent,
   itemAttachments,
   attachmentUrl,
@@ -27,7 +28,8 @@ import { formatSimpleDate } from "@/lib/dates";
 const TABS: { key: ContentType; label: string }[] = [
   { key: "Videos", label: "📹 Lectures" },
   { key: "notes", label: "📝 Notes" },
-  { key: "DppNotes", label: "📋 DPPs" },
+  { key: "DppNotes", label: "📋 DPP Sheets" },
+  { key: "DppVideos", label: "🎬 DPP Videos" },
 ];
 
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/topic/$topicId/")({
@@ -62,9 +64,11 @@ function TopicPage() {
     name?.toLowerCase().includes("book") ||
     name?.toLowerCase().includes("sheet")
       ? "notes"
-      : name?.toLowerCase().includes("dpp")
-        ? "DppNotes"
-        : "Videos";
+      : name?.toLowerCase().includes("dpp video")
+        ? "DppVideos"
+        : name?.toLowerCase().includes("dpp")
+          ? "DppNotes"
+          : "Videos";
   const [tab, setTab] = useState<ContentType>(initialTab);
   const [previewPdf, setPreviewPdf] = useState<{
     name: string;
@@ -168,7 +172,7 @@ function TopicPage() {
       {/* Rows for Videos / Notes / DPPs */}
       <div className="grid gap-3.5">
         {items.map((item, i) => {
-          if (tab === "Videos") {
+          if (tab === "Videos" || tab === "DppVideos") {
             return (
               <VideoRow
                 key={`${item._id}-${i}`}
@@ -176,6 +180,7 @@ function TopicPage() {
                 batchId={batchId}
                 subjectId={subjectId}
                 topicId={topicId}
+                isDpp={tab === "DppVideos"}
               />
             );
           }
@@ -183,6 +188,10 @@ function TopicPage() {
             <DocRow
               key={`${item._id}-${i}`}
               item={item}
+              batchId={batchId}
+              subjectId={subjectId}
+              topicId={topicId}
+              isDpp={tab === "DppNotes"}
               onPreviewPdf={(pdf) => setPreviewPdf(pdf)}
             />
           );
@@ -211,6 +220,71 @@ function TopicPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* API Endpoint & Session Inspector Dialog */}
+      <Dialog open={isApiModalOpen} onOpenChange={setIsApiModalOpen}>
+        <DialogContent className="max-w-md p-5 bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
+              <Terminal className="h-4 w-4 text-primary" />
+              Video URL Details & API Config
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3.5 text-xs">
+            <div>
+              <p className="font-semibold text-muted-foreground mb-1">Video Details Endpoint:</p>
+              <code className="block rounded-lg bg-muted p-2 text-[11px] font-mono text-primary break-all border border-border">
+                {`${API_BASE}/v1/video-url-details?parentId=${batchId}&childId={lectureId}`}
+              </code>
+            </div>
+            <div>
+              <p className="font-semibold text-muted-foreground mb-1">Batch ID (parentId):</p>
+              <code className="block rounded-lg bg-muted p-1.5 text-[11px] font-mono break-all border border-border">
+                {batchId}
+              </code>
+            </div>
+            <div>
+              <label
+                htmlFor="auth-token-input"
+                className="font-semibold text-muted-foreground block mb-1"
+              >
+                Optional Auth Token (Bearer Token):
+              </label>
+              <input
+                id="auth-token-input"
+                type="text"
+                placeholder="Paste token here if authorized…"
+                defaultValue={
+                  typeof window !== "undefined" ? localStorage.getItem("pw_auth_token") || "" : ""
+                }
+                onChange={(e) => {
+                  if (typeof window !== "undefined") {
+                    const val = e.target.value.trim();
+                    if (val) {
+                      localStorage.setItem("pw_auth_token", val);
+                    } else {
+                      localStorage.removeItem("pw_auth_token");
+                    }
+                  }
+                }}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsApiModalOpen(false);
+                  window.location.reload();
+                }}
+                className="rounded-xl bg-primary px-4 py-2 font-bold text-xs text-primary-foreground hover:opacity-90 cursor-pointer"
+              >
+                Save & Reload
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
@@ -220,15 +294,21 @@ function VideoRow({
   batchId,
   subjectId,
   topicId,
+  isDpp,
 }: {
   item: ContentItem;
   batchId: string;
   subjectId: string;
   topicId: string;
+  isDpp?: boolean;
 }) {
   const thumb = item.videoDetails?.image;
   const targetLectureId = item.videoDetails?._id || item.videoDetails?.id || item._id;
-  const title = item.topic ?? item.videoDetails?.name ?? item.name ?? "Lecture";
+  const title =
+    item.topic ??
+    item.videoDetails?.name ??
+    item.name ??
+    (isDpp ? "DPP Solution Video" : "Lecture");
 
   return (
     <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 bg-card border border-primary/20 hover:border-primary/60 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl">
@@ -267,7 +347,7 @@ function VideoRow({
             )}
             <span className="text-border">·</span>
             <span className="text-primary font-bold text-[11px] bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              HD Stream
+              {isDpp ? "DPP Solution" : "HD Stream"}
             </span>
           </div>
         </div>
@@ -290,14 +370,34 @@ function VideoRow({
 
 function DocRow({
   item,
+  batchId,
+  subjectId,
+  topicId,
+  isDpp,
   onPreviewPdf,
 }: {
   item: ContentItem;
+  batchId?: string;
+  subjectId?: string;
+  topicId?: string;
+  isDpp?: boolean;
   onPreviewPdf?: (pdf: { name: string; url: string }) => void;
 }) {
   const homeworks =
     item.homeworkIds?.filter((h) => (h.attachmentIds && h.attachmentIds.length > 0) || h.topic) ??
     [];
+
+  // Detect if item or homework has a video solution
+  const hasVideoSolution = Boolean(
+    isDpp ||
+    item.isVideoLecture ||
+    item.urlType === "penpencilvdo" ||
+    item.videoDetails?.videoUrl ||
+    item.videoDetails?._id ||
+    item.videoDetails?.id ||
+    item.url,
+  );
+  const solutionVideoId = item.videoDetails?._id || item.videoDetails?.id || item._id;
 
   if (homeworks.length > 0) {
     return (
@@ -329,7 +429,7 @@ function DocRow({
             });
           }
 
-          const title = hw.topic ?? hwFiles[0]?.name ?? "Notes";
+          const title = hw.topic ?? hwFiles[0]?.name ?? (isDpp ? "DPP Practice Sheet" : "Notes");
 
           return (
             <div
@@ -340,7 +440,7 @@ function DocRow({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                      Study Material
+                      {isDpp ? "DPP Study Material" : "Study Material"}
                     </span>
                   </div>
                   <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
@@ -356,39 +456,52 @@ function DocRow({
                 </div>
               </div>
 
-              {hwFiles.length > 0 ? (
-                <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
-                  {hwFiles.map((f, i) => (
-                    <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
-                      {onPreviewPdf && (
-                        <button
-                          type="button"
-                          onClick={() => onPreviewPdf(f)}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
-                        </button>
-                      )}
-                      <a
-                        href={f.url}
-                        download={f.name}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+              <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                {hwFiles.map((f, i) => (
+                  <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
+                    {onPreviewPdf && (
+                      <button
+                        type="button"
+                        onClick={() => onPreviewPdf(f)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
                       >
-                        <Download className="h-3 w-3" />
-                        <span>Download</span>
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span>Notes not uploaded yet by instructor for this session</span>
-                </div>
-              )}
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
+                      </button>
+                    )}
+                    <a
+                      href={f.url}
+                      download={f.name}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+                    >
+                      <Download className="h-3 w-3" />
+                      <span>Download</span>
+                    </a>
+                  </div>
+                ))}
+
+                {/* Watch Video Solution if available */}
+                {batchId && subjectId && topicId && hasVideoSolution && solutionVideoId && (
+                  <Link
+                    to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
+                    params={{ batchId, subjectId, topicId, lectureId: solutionVideoId }}
+                    search={{ videoId: solutionVideoId, title: `Solution: ${title}` }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>Watch Solution Video</span>
+                  </Link>
+                )}
+
+                {hwFiles.length === 0 && !hasVideoSolution && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span>Notes not uploaded yet by instructor for this session</span>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -398,7 +511,11 @@ function DocRow({
 
   const files = itemAttachments(item);
   const title =
-    item.topic ?? item.name ?? item.homeworkIds?.[0]?.topic ?? item.videoDetails?.name ?? "Notes";
+    item.topic ??
+    item.name ??
+    item.homeworkIds?.[0]?.topic ??
+    item.videoDetails?.name ??
+    (isDpp ? "DPP Practice Sheet" : "Notes");
 
   return (
     <div className="card-surface p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl">
@@ -406,7 +523,7 @@ function DocRow({
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              Chapter Notes
+              {isDpp ? "DPP Sheet" : "Chapter Notes"}
             </span>
           </div>
           <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
@@ -419,39 +536,52 @@ function DocRow({
         </div>
       </div>
 
-      {files.length > 0 ? (
-        <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
-          {files.map((f, i) => (
-            <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
-              {onPreviewPdf && (
-                <button
-                  type="button"
-                  onClick={() => onPreviewPdf(f)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
-                </button>
-              )}
-              <a
-                href={f.url}
-                download={f.name}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+      <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+        {files.map((f, i) => (
+          <div key={`${f.url}-${i}`} className="inline-flex items-center gap-2">
+            {onPreviewPdf && (
+              <button
+                type="button"
+                onClick={() => onPreviewPdf(f)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 cursor-pointer"
               >
-                <Download className="h-3 w-3" />
-                <span>Download</span>
-              </a>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span>Notes not uploaded yet by instructor for this session</span>
-        </div>
-      )}
+                <Eye className="h-3.5 w-3.5" />
+                <span>View {f.name.length > 20 ? "PDF" : f.name}</span>
+              </button>
+            )}
+            <a
+              href={f.url}
+              download={f.name}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20"
+            >
+              <Download className="h-3 w-3" />
+              <span>Download</span>
+            </a>
+          </div>
+        ))}
+
+        {/* Watch Solution Video button if available */}
+        {batchId && subjectId && topicId && hasVideoSolution && solutionVideoId && (
+          <Link
+            to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
+            params={{ batchId, subjectId, topicId, lectureId: solutionVideoId }}
+            search={{ videoId: solutionVideoId, title: `Solution: ${title}` }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer"
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+            <span>Watch Video Solution</span>
+          </Link>
+        )}
+
+        {files.length === 0 && !hasVideoSolution && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span>Notes not uploaded yet by instructor for this session</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -95,7 +95,7 @@ export type ContentItem = {
     | undefined;
 };
 
-export type ContentType = "Videos" | "notes" | "DppNotes" | "Test";
+export type ContentType = "Videos" | "notes" | "DppNotes" | "DppVideos" | "Test";
 
 export type VideoDetails = {
   _id: string;
@@ -505,6 +505,129 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
   return null;
 }
 
+/**
+ * Direct Video URL details fetch using user-specified endpoint:
+ * Endpoint: http://a.pimaxer.in/v1/video-url-details?parentId={parentId}&childId={childId}
+ * Used for video URL fetching and DPP videos (with parentId = batchId, childId = lectureId / dppId)
+ */
+export async function fetchVideoUrlDetails(
+  parentId: string,
+  childId: string,
+): Promise<VideoDetails | null> {
+  if (!parentId || !childId) return null;
+
+  // Supplies both parentId and batchId for complete compatibility
+  const params = new URLSearchParams({
+    parentId,
+    childId,
+    batchId: parentId,
+  });
+
+  const url = `${API_BASE}/v1/video-url-details?${params.toString()}`;
+
+  let targetUrl = url;
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    targetUrl.startsWith("http://a.pimaxer.in")
+  ) {
+    targetUrl = targetUrl.replace("http://a.pimaxer.in", "https://a.pimaxer.in");
+  }
+
+  const customHeaders: Record<string, string> = {
+    accept: "application/json",
+    "client-type": "WEB",
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      const storedToken =
+        localStorage.getItem("pw_auth_token") ||
+        localStorage.getItem("pimaxer_token") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("auth_token");
+      if (storedToken) {
+        customHeaders["Authorization"] = storedToken.startsWith("Bearer ")
+          ? storedToken
+          : `Bearer ${storedToken}`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 1. Try primary a.pimaxer.in endpoint
+  try {
+    const res = await fetchWithTimeout(targetUrl, {
+      headers: customHeaders,
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const payload = (json?.data || json) as Record<string, unknown>;
+      const rawUrl =
+        (typeof payload["videoUrl"] === "string" ? payload["videoUrl"] : undefined) ||
+        (typeof payload["url"] === "string" ? payload["url"] : undefined) ||
+        (typeof payload["streamUrl"] === "string" ? payload["streamUrl"] : undefined) ||
+        (typeof payload["hlsUrl"] === "string" ? payload["hlsUrl"] : undefined) ||
+        (typeof (payload["videoDetails"] as Record<string, unknown>)?.["videoUrl"] === "string"
+          ? ((payload["videoDetails"] as Record<string, unknown>)["videoUrl"] as string)
+          : undefined);
+
+      if (rawUrl) {
+        return {
+          _id: String(payload["_id"] || payload["id"] || childId),
+          id: String(payload["id"] || payload["_id"] || childId),
+          name: typeof payload["name"] === "string" ? payload["name"] : undefined,
+          videoUrl: normalizeStreamUrl(rawUrl),
+          duration: typeof payload["duration"] === "string" ? payload["duration"] : undefined,
+          status: typeof payload["status"] === "string" ? payload["status"] : "Ready",
+          image: typeof payload["image"] === "string" ? payload["image"] : undefined,
+          types: Array.isArray(payload["types"]) ? (payload["types"] as string[]) : undefined,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn(`[video-url-details] Failed to query ${targetUrl}:`, err);
+  }
+
+  // 2. Try proxy stream base as fallback mirror
+  try {
+    const proxyUrl = `${PROXY_STREAM_BASE}/v1/video-url-details?${params.toString()}`;
+    const resProxy = await fetchWithTimeout(proxyUrl, {
+      headers: customHeaders,
+    });
+    if (resProxy.ok) {
+      const json = await resProxy.json();
+      const payload = (json?.data || json) as Record<string, unknown>;
+      const rawUrl =
+        (typeof payload["videoUrl"] === "string" ? payload["videoUrl"] : undefined) ||
+        (typeof payload["url"] === "string" ? payload["url"] : undefined) ||
+        (typeof payload["streamUrl"] === "string" ? payload["streamUrl"] : undefined) ||
+        (typeof payload["hlsUrl"] === "string" ? payload["hlsUrl"] : undefined) ||
+        (typeof (payload["videoDetails"] as Record<string, unknown>)?.["videoUrl"] === "string"
+          ? ((payload["videoDetails"] as Record<string, unknown>)["videoUrl"] as string)
+          : undefined);
+
+      if (rawUrl) {
+        return {
+          _id: String(payload["_id"] || payload["id"] || childId),
+          id: String(payload["id"] || payload["_id"] || childId),
+          name: typeof payload["name"] === "string" ? payload["name"] : undefined,
+          videoUrl: normalizeStreamUrl(rawUrl),
+          duration: typeof payload["duration"] === "string" ? payload["duration"] : undefined,
+          status: typeof payload["status"] === "string" ? payload["status"] : "Ready",
+          image: typeof payload["image"] === "string" ? payload["image"] : undefined,
+          types: Array.isArray(payload["types"]) ? (payload["types"] as string[]) : undefined,
+        };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
 /** Extracts an ID or alphanumeric UUID from a URL */
 export function extractVideoId(str?: string | null): string | null {
   if (!str) return null;
@@ -516,12 +639,24 @@ export function extractVideoId(str?: string | null): string | null {
  * Resolves direct playback URL directly from video APIs without proxying
  */
 export async function resolvePlayback(
-  _batchId: string,
+  batchId: string,
   _subjectId: string,
   lectureId: string,
   directUrl?: string | null,
 ): Promise<{ src: string; isDirectMp4?: boolean; videoDetails?: VideoDetails } | null> {
-  // 1. Direct query to video details
+  // 1. Primary: Video URL details via parentId & childId endpoint
+  if (batchId && lectureId) {
+    const details = await fetchVideoUrlDetails(batchId, lectureId);
+    if (details?.videoUrl) {
+      return {
+        src: details.videoUrl,
+        isDirectMp4: details.videoUrl.endsWith(".mp4") || details.videoUrl.includes("/stream/"),
+        videoDetails: details,
+      };
+    }
+  }
+
+  // 2. Direct query to video details
   const videoData = await fetchVideoById(lectureId);
   if (videoData?.videoUrl) {
     return {
@@ -531,9 +666,20 @@ export async function resolvePlayback(
     };
   }
 
-  // 2. Extracted video ID from directUrl
+  // 3. Extracted video ID from directUrl
   const extractedId = extractVideoId(directUrl);
   if (extractedId && extractedId !== lectureId) {
+    if (batchId) {
+      const extDetails = await fetchVideoUrlDetails(batchId, extractedId);
+      if (extDetails?.videoUrl) {
+        return {
+          src: extDetails.videoUrl,
+          isDirectMp4:
+            extDetails.videoUrl.endsWith(".mp4") || extDetails.videoUrl.includes("/stream/"),
+          videoDetails: extDetails,
+        };
+      }
+    }
     const extractedData = await fetchVideoById(extractedId);
     if (extractedData?.videoUrl) {
       return {
@@ -545,7 +691,7 @@ export async function resolvePlayback(
     }
   }
 
-  // 3. Direct URL fallback
+  // 4. Direct URL fallback
   if (directUrl && /^https?:\/\//i.test(directUrl)) {
     const cleanUrl = normalizeStreamUrl(directUrl) || directUrl;
     return {

@@ -54,7 +54,12 @@ export function UIColorPicker() {
         <Palette
           className="h-4 w-4 transition-transform hover:rotate-12"
           style={{
-            color: activeColor.id === "green" && !isDark ? "#1d5200" : activeColor.bgHex,
+            color:
+              activeColor.id === "yellow" && !isDark
+                ? "#b45309"
+                : activeColor.id === "green" && !isDark
+                  ? "#1d5200"
+                  : activeColor.bgHex,
           }}
         />
         {/* Miniature active accent color dot on the circle */}
@@ -205,6 +210,8 @@ export function UIColorPicker() {
  */
 export function UIColorPickerMobile() {
   const { isDark, setTheme, colorScheme, setColorScheme } = useTheme();
+  const activeColor =
+    THEME_COLOR_OPTIONS.find((c) => c.id === colorScheme) || THEME_COLOR_OPTIONS[0];
 
   return (
     <div className="space-y-3 p-3 rounded-xl bg-card border border-border">
@@ -213,12 +220,11 @@ export function UIColorPickerMobile() {
         <span
           className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md"
           style={{
-            backgroundColor:
-              colorScheme === "blue" ? "#25A7DA" : colorScheme === "green" ? "#7CFC00" : "#2563eb",
-            color: colorScheme === "green" ? "#000" : "#fff",
+            backgroundColor: activeColor.bgHex,
+            color: activeColor.textColor,
           }}
         >
-          {colorScheme === "blue" ? "#25A7DA" : colorScheme === "green" ? "#7CFC00" : "#2563eb"}
+          {activeColor.label}
         </span>
       </div>
 

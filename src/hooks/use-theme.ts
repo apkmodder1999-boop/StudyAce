@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export type ThemeMode = "light" | "dark";
-export type ThemeColor = "blue" | "green" | "default";
+export type ThemeColor = "yellow" | "blue" | "green" | "default";
 
 export interface ColorOption {
   id: ThemeColor;
@@ -14,8 +14,16 @@ export interface ColorOption {
 
 export const THEME_COLOR_OPTIONS: ColorOption[] = [
   {
+    id: "yellow",
+    label: "Light Yellow & White",
+    code: "#EAB308",
+    bgHex: "#FACC15",
+    textColor: "#1c1917",
+    description: "White & Light Yellow (Default)",
+  },
+  {
     id: "blue",
-    label: "Blue",
+    label: "Cyan Blue",
     code: "#25A7DA",
     bgHex: "#25A7DA",
     textColor: "#ffffff",
@@ -23,7 +31,7 @@ export const THEME_COLOR_OPTIONS: ColorOption[] = [
   },
   {
     id: "green",
-    label: "Green",
+    label: "Lime Green",
     code: "#7CFC00",
     bgHex: "#7CFC00",
     textColor: "#090d16",
@@ -44,7 +52,12 @@ export function applyColorToDOM(color: ThemeColor) {
   const root = document.documentElement;
   root.setAttribute("data-color", color);
 
-  if (color === "blue") {
+  if (color === "yellow") {
+    root.style.setProperty("--primary", "#eab308");
+    root.style.setProperty("--pw-blue", "#eab308");
+    root.style.setProperty("--ring", "#eab308");
+    root.style.setProperty("--primary-foreground", "#1c1917");
+  } else if (color === "blue") {
     root.style.setProperty("--primary", "#25A7DA");
     root.style.setProperty("--pw-blue", "#25A7DA");
     root.style.setProperty("--ring", "#25A7DA");
@@ -64,7 +77,7 @@ export function applyColorToDOM(color: ThemeColor) {
 
 export function useTheme() {
   const [theme, setThemeState] = useState<ThemeMode>("light");
-  const [colorScheme, setColorSchemeState] = useState<ThemeColor>("blue");
+  const [colorScheme, setColorSchemeState] = useState<ThemeColor>("yellow");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -78,17 +91,26 @@ export function useTheme() {
       const storedColor = localStorage.getItem("ui-color") as ThemeColor;
       if (
         storedColor &&
-        (storedColor === "blue" || storedColor === "green" || storedColor === "default")
+        (storedColor === "yellow" ||
+          storedColor === "blue" ||
+          storedColor === "green" ||
+          storedColor === "default")
       ) {
         setColorSchemeState(storedColor);
         applyColorToDOM(storedColor);
       } else {
         const existing = document.documentElement.getAttribute("data-color") as ThemeColor;
-        if (existing && (existing === "blue" || existing === "green" || existing === "default")) {
+        if (
+          existing &&
+          (existing === "yellow" ||
+            existing === "blue" ||
+            existing === "green" ||
+            existing === "default")
+        ) {
           setColorSchemeState(existing);
         } else {
-          setColorSchemeState("blue");
-          applyColorToDOM("blue");
+          setColorSchemeState("yellow");
+          applyColorToDOM("yellow");
         }
       }
     } catch {
@@ -98,7 +120,7 @@ export function useTheme() {
     const observer = new MutationObserver(() => {
       setThemeState(document.documentElement.classList.contains("dark") ? "dark" : "light");
       const c = document.documentElement.getAttribute("data-color") as ThemeColor;
-      if (c && (c === "blue" || c === "green" || c === "default")) {
+      if (c && (c === "yellow" || c === "blue" || c === "green" || c === "default")) {
         setColorSchemeState(c);
       }
     });
