@@ -30,6 +30,7 @@ import {
   type ContentItem,
   type Attachment,
 } from "@/lib/api";
+import { getLectureVideoStream } from "@/lib/videoService";
 import { Shell, Crumbs, ErrorBox } from "@/components/shell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PDFActionDialog } from "@/components/PDFActionDialog";
@@ -141,8 +142,9 @@ function LecturePage() {
     }
   }, [itemData?._id, lectureId]);
 
-  // 2. Query direct video stream using https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}
-  // CRITICAL: enabled is false while itemLoading so video-url-details receives resolved lecture ID
+  // 2. Query direct video stream using official getLectureVideoStream
+  // CRITICAL ID RULE: childId MUST be the TOP-LEVEL content item ID (item._id)
+  // NEVER the nested item.videoDetails._id!
   const { data: videoData, isLoading: videoLoading } = useQuery({
     queryKey: ["lecture-video-stream", batchId, resolvedTopLevelId, itemData?._id],
     enabled: Boolean(batchId && !itemLoading && resolvedTopLevelId),
@@ -150,15 +152,34 @@ function LecturePage() {
       const topLevelChildId = itemData?._id || resolvedTopLevelId;
       if (!topLevelChildId || !batchId) return null;
 
+      const effectiveItem: ContentItem = itemData || {
+        _id: topLevelChildId,
+        topic: searchTitle,
+        name: searchTitle,
+      };
+
       // 1. Primary: Official PiMaxer video-url-details endpoint with top-level ID (item._id)
-      const vDetails = await fetchVideoUrlDetails(batchId, topLevelChildId);
-      if (vDetails?.videoUrl) return vDetails;
+      try {
+        const res = await getLectureVideoStream(batchId, effectiveItem);
+        if (res?.streamUrl) {
+          return {
+            _id: topLevelChildId,
+            videoUrl: res.streamUrl,
+            name: res.title || searchTitle,
+            duration: res.duration,
+            image: res.image,
+          };
+        }
+      } catch (err) {
+        console.warn("[LecturePage] getLectureVideoStream failed, trying direct fallbacks:", err);
+      }
 
       // Bottom video ID (from itemData.videoDetails._id or stream URL)
       const bottomVideoId =
         itemData?.videoDetails?._id ||
         itemData?.videoDetails?.id ||
-        (itemData?.url ? extractVideoId(itemData.url) : null);
+        (itemData?.url ? extractVideoId(itemData.url) : null) ||
+        (lectureId !== topLevelChildId ? lectureId : null);
 
       // 2. Direct videoDetails stream URL (if available)
       if (itemData?.videoDetails?.videoUrl) {
@@ -171,18 +192,7 @@ function LecturePage() {
         };
       }
 
-      // 3. Item direct stream URL (if available)
-      if (itemData?.url) {
-        return {
-          _id: topLevelChildId,
-          videoUrl: normalizeStreamUrl(itemData.url),
-          name: itemData?.topic || itemData?.name || searchTitle,
-          duration: itemData?.videoDetails?.duration,
-          image: itemData?.videoDetails?.image,
-        };
-      }
-
-      // 4. Direct stream CDN using bottom video ID
+      // 3. Direct stream CDN using bottom video ID
       if (bottomVideoId) {
         return {
           _id: topLevelChildId,
@@ -193,13 +203,11 @@ function LecturePage() {
         };
       }
 
-      // 5. Fallback: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
+      // 4. Fallback: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
       if (bottomVideoId) {
         const directVideo = await fetchVideoById(bottomVideoId);
         if (directVideo?.videoUrl) return directVideo;
       }
-      const directVideoTop = await fetchVideoById(topLevelChildId);
-      if (directVideoTop?.videoUrl) return directVideoTop;
 
       return null;
     },

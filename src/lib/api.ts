@@ -484,14 +484,15 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
   };
 }
 
+export { getLectureVideoStream, type VideoStreamResponse } from "./videoService";
+
 /**
  * Official PiMaxer Video & DPP Videos Stream Endpoint:
- * https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}
+ * https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}&batchId={batchId}
  * Example: https://a.pimaxer.in/v1/video-url-details?parentId=67738e4c6e30ac746bcb34d7&childId=69e72613a8140bb9efae5b50
  *
- * Query parameters are strictly:
- * - parentId={batchId}
- * - childId={lectureId}
+ * CRITICAL ID RULE: childId MUST be the TOP-LEVEL content item ID (item._id from contents array),
+ * NEVER the nested item.videoDetails._id (which triggers 500 Media API Node failure).
  */
 export async function fetchVideoUrlDetails(
   parentId: string,
@@ -499,10 +500,10 @@ export async function fetchVideoUrlDetails(
 ): Promise<VideoDetails | null> {
   if (!parentId || !childId) return null;
 
-  // Query strictly with parentId and childId (NO batchId in query params)
   const params = new URLSearchParams({
     parentId,
     childId,
+    batchId: parentId,
   });
 
   const targetUrl = `${API_BASE}/v1/video-url-details?${params.toString()}`;
