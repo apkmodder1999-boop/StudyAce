@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   FileText,
@@ -11,6 +11,9 @@ import {
   RefreshCw,
   Eye,
   Download,
+  Plus,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import {
   API_BASE,
@@ -79,12 +82,39 @@ function TopicPage() {
     url: string;
   } | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["content", batchId, subjectId, topicId, tab, slug],
-    queryFn: () => fetchTopicContent(batchId, subjectId, tab, topicId, name, slug),
-  });
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
+    useInfiniteQuery({
+      queryKey: ["content", batchId, subjectId, topicId, tab, slug],
+      queryFn: ({ pageParam = 1 }) =>
+        fetchTopicContent(batchId, subjectId, tab, topicId, name, slug, pageParam),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, allPages) => {
+        if (!lastPage || lastPage.length === 0) return undefined;
+        const prevIds = new Set<string>();
+        for (let i = 0; i < allPages.length - 1; i++) {
+          for (const item of allPages[i]) {
+            if (item._id) prevIds.add(item._id);
+          }
+        }
+        const hasNewItems = lastPage.some((item) => item._id && !prevIds.has(item._id));
+        if (!hasNewItems) return undefined;
 
-  const items = data ?? [];
+        return allPages.length + 1;
+      },
+    });
+
+  const allItems = data?.pages.flatMap((page) => page) ?? [];
+  const seenIds = new Set<string>();
+  const items: ContentItem[] = [];
+  for (const it of allItems) {
+    if (it._id && !seenIds.has(it._id)) {
+      seenIds.add(it._id);
+      items.push(it);
+    }
+  }
+
+  const loadedPagesCount = data?.pages.length ?? 1;
+  const nextPageNumber = loadedPagesCount + 1;
 
   return (
     <Shell>
@@ -202,6 +232,45 @@ function TopicPage() {
           );
         })}
       </div>
+
+      {/* Load More Content Button */}
+      {hasNextPage && (
+        <div className="mt-8 flex flex-col items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:opacity-95 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading Page {nextPageNumber}…</span>
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                <span>Load More Content (Page {nextPageNumber})</span>
+              </>
+            )}
+          </button>
+          <p className="text-[11px] text-muted-foreground font-medium">
+            Showing {items.length} items · Current endpoint:{" "}
+            <code className="font-mono text-primary font-semibold">
+              contents?page={loadedPagesCount}&contentType={tab}
+            </code>
+          </p>
+        </div>
+      )}
+
+      {!hasNextPage && !isLoading && items.length > 0 && (
+        <div className="mt-8 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-muted/70 px-4 py-1.5 text-xs font-semibold text-muted-foreground border border-border">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+            <span>All {items.length} items loaded</span>
+          </div>
+        </div>
+      )}
 
       {/* PDF Direct Actions Dialog (Do NOT Proxy) */}
       <PDFActionDialog

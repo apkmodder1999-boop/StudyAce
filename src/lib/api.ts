@@ -380,13 +380,13 @@ export async function fetchBatchDetails(batchId: string): Promise<{
 
 /**
  * Direct Topics Fetch
- * Endpoint: http://a.pimaxer.in/v1/{batchId}/subject/{subjectId}/topics?page=1
+ * Endpoint: http://a.pimaxer.in/v1/{batchId}/subject/{subjectId}/topics?page={page}
  */
-export async function fetchTopics(batchId: string, subjectId: string): Promise<Topic[]> {
+export async function fetchTopics(batchId: string, subjectId: string, page = 1): Promise<Topic[]> {
   const json = await getJSON<{
     success?: boolean;
     data?: Topic[];
-  }>(`${API_BASE}/v1/${batchId}/subject/${subjectId}/topics?page=1`);
+  }>(`${API_BASE}/v1/${batchId}/subject/${subjectId}/topics?page=${page}`);
 
   return Array.isArray(json?.data) ? json.data : [];
 }
@@ -426,8 +426,9 @@ export async function fetchTopicContent(
   topicId: string,
   _topicName?: string,
   _topicSlug?: string,
+  page = 1,
 ): Promise<ContentItem[]> {
-  return fetchContent(batchId, subjectId, contentType, topicId, 1);
+  return fetchContent(batchId, subjectId, contentType, topicId, page);
 }
 
 export const PROXY_STREAM_BASE = "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com";

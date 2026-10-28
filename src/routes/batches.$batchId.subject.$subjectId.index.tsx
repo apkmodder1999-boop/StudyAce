@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { fetchBatchDetails, fetchTopics } from "@/lib/api";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { fetchBatchDetails, fetchTopics, type Topic } from "@/lib/api";
 import { Shell, PageTitle, Crumbs, Loading, ErrorBox, EmptyBox } from "@/components/shell";
-import { ArrowRight, BookOpen, Video, FileText, CheckCircle2 } from "lucide-react";
+import { ArrowRight, BookOpen, Video, FileText, CheckCircle2, Plus, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/")({
   head: () => ({
@@ -29,13 +29,44 @@ function SubjectPage() {
     queryKey: ["batch", batchId],
     queryFn: () => fetchBatchDetails(batchId),
   });
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["topics", batchId, subjectId],
-    queryFn: () => fetchTopics(batchId, subjectId),
-  });
+
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
+    useInfiniteQuery({
+      queryKey: ["topics", batchId, subjectId],
+      queryFn: ({ pageParam = 1 }) => fetchTopics(batchId, subjectId, pageParam),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, allPages) => {
+        if (!lastPage || lastPage.length === 0) return undefined;
+        // Gather all IDs from previous pages
+        const prevIds = new Set<string>();
+        for (let i = 0; i < allPages.length - 1; i++) {
+          for (const item of allPages[i]) {
+            if (item._id) prevIds.add(item._id);
+          }
+        }
+        // If every item in lastPage is duplicate, end of pages
+        const hasNewItems = lastPage.some((item) => item._id && !prevIds.has(item._id));
+        if (!hasNewItems) return undefined;
+
+        return allPages.length + 1;
+      },
+    });
 
   const subject = batch.data?.subjects?.find((s) => s._id === subjectId);
-  const topics = data ?? [];
+
+  // Flatten and deduplicate topics by _id across all loaded pages
+  const allTopics = data?.pages.flatMap((page) => page) ?? [];
+  const seenIds = new Set<string>();
+  const topics: Topic[] = [];
+  for (const t of allTopics) {
+    if (t._id && !seenIds.has(t._id)) {
+      seenIds.add(t._id);
+      topics.push(t);
+    }
+  }
+
+  const loadedPagesCount = data?.pages.length ?? 1;
+  const nextPageNumber = loadedPagesCount + 1;
 
   return (
     <Shell>
@@ -121,6 +152,45 @@ function SubjectPage() {
           </Link>
         ))}
       </div>
+
+      {/* Load More Content / Chapters Button */}
+      {hasNextPage && (
+        <div className="mt-8 flex flex-col items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:opacity-95 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading Page {nextPageNumber}…</span>
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                <span>Load More Content (Page {nextPageNumber})</span>
+              </>
+            )}
+          </button>
+          <p className="text-[11px] text-muted-foreground font-medium">
+            Showing {topics.length} chapters · Current endpoint:{" "}
+            <code className="font-mono text-primary font-semibold">
+              topics?page={loadedPagesCount}
+            </code>
+          </p>
+        </div>
+      )}
+
+      {!hasNextPage && !isLoading && topics.length > 0 && (
+        <div className="mt-8 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-muted/70 px-4 py-1.5 text-xs font-semibold text-muted-foreground border border-border">
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+            <span>All {topics.length} chapters loaded</span>
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }
