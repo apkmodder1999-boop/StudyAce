@@ -398,11 +398,12 @@ export async function fetchTopics(batchId: string, subjectId: string): Promise<T
 export async function fetchContent(
   batchId: string,
   subjectId: string,
-  contentType: ContentType,
+  contentType: ContentType | string,
   topicId?: string,
   page = 1,
 ): Promise<ContentItem[]> {
-  let url = `${API_BASE}/v1/${batchId}/subject/${subjectId}/contents?page=${page}&contentType=${contentType}`;
+  const normType = contentType === "Videos" ? "videos" : contentType;
+  let url = `${API_BASE}/v1/${batchId}/subject/${subjectId}/contents?page=${page}&contentType=${normType}`;
   if (topicId) {
     url += `&tag=${topicId}`;
   }
@@ -485,11 +486,12 @@ export async function fetchVideoById(videoId: string): Promise<VideoDetails | nu
 
 /**
  * Official PiMaxer Video & DPP Videos Stream Endpoint:
- * https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}&batchId={batchId}
+ * https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}
+ * Example: https://a.pimaxer.in/v1/video-url-details?parentId=67738e4c6e30ac746bcb34d7&childId=69e72613a8140bb9efae5b50
  *
- * CRITICAL ID RULE: The childId parameter MUST be the TOP-LEVEL content item ID (item._id from contents array),
- * NEVER the nested item.videoDetails._id. Passing videoDetails._id triggers a 500 Media API failure,
- * while passing the top-level item._id returns a 200 OK with the multi-resolution HLS stream (https://a.pimaxer.in/v1/hls/{uuid}/index.m3u8).
+ * Query parameters are strictly:
+ * - parentId={batchId}
+ * - childId={lectureId}
  */
 export async function fetchVideoUrlDetails(
   parentId: string,
@@ -497,19 +499,16 @@ export async function fetchVideoUrlDetails(
 ): Promise<VideoDetails | null> {
   if (!parentId || !childId) return null;
 
-  // Primary URL with parentId, childId (top-level item._id), and batchId
+  // Query strictly with parentId and childId (NO batchId in query params)
   const params = new URLSearchParams({
     parentId,
     childId,
-    batchId: parentId,
   });
 
   const targetUrl = `${API_BASE}/v1/video-url-details?${params.toString()}`;
 
   const customHeaders: Record<string, string> = {
     Accept: "application/json",
-    "Client-Type": "WEB",
-    Referer: "https://peedablu.com/",
   };
 
   if (typeof window !== "undefined") {
@@ -563,18 +562,7 @@ export async function fetchVideoUrlDetails(
     console.warn(`[video-url-details] Primary query failed for ${targetUrl}:`, err);
   }
 
-  // Stream Fallback 1: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
-  const fallbackDirect = await fetchVideoById(childId);
-  if (fallbackDirect?.videoUrl) {
-    return fallbackDirect;
-  }
-
-  // Stream Fallback 2: Direct MP4 stream CDN https://a.pimaxer.in/stream/{streamUuid}/video.mp4
-  return {
-    _id: childId,
-    videoUrl: `${API_BASE}/stream/${childId}/video.mp4`,
-    status: "Ready",
-  };
+  return null;
 }
 
 /** Extracts an ID or alphanumeric UUID from a URL */
@@ -605,7 +593,16 @@ export async function resolvePlayback(
     }
   }
 
-  // 2. Direct query to video details
+  // 2. Direct URL fallback (if item has a direct .mp4 or stream URL)
+  if (directUrl && /^https?:\/\//i.test(directUrl)) {
+    const cleanUrl = normalizeStreamUrl(directUrl) || directUrl;
+    return {
+      src: cleanUrl,
+      isDirectMp4: cleanUrl.endsWith(".mp4") || cleanUrl.includes("/stream/"),
+    };
+  }
+
+  // 3. Fallback: Direct query to video details
   const videoData = await fetchVideoById(lectureId);
   if (videoData?.videoUrl) {
     return {
@@ -615,20 +612,9 @@ export async function resolvePlayback(
     };
   }
 
-  // 3. Extracted video ID from directUrl
+  // 4. Extracted stream ID fallback: direct video endpoint or MP4 stream only (NEVER pass to video-url-details)
   const extractedId = extractVideoId(directUrl);
   if (extractedId && extractedId !== lectureId) {
-    if (batchId) {
-      const extDetails = await fetchVideoUrlDetails(batchId, extractedId);
-      if (extDetails?.videoUrl) {
-        return {
-          src: extDetails.videoUrl,
-          isDirectMp4:
-            extDetails.videoUrl.endsWith(".mp4") || extDetails.videoUrl.includes("/stream/"),
-          videoDetails: extDetails,
-        };
-      }
-    }
     const extractedData = await fetchVideoById(extractedId);
     if (extractedData?.videoUrl) {
       return {

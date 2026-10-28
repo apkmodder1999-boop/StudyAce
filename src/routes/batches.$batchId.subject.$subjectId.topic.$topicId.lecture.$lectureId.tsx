@@ -70,7 +70,7 @@ function LecturePage() {
     url: string;
   } | null>(null);
 
-  // 1. Fetch item from content pages (check current topic first)
+  // 1. Fetch item from content pages (check current topic first, then untagged)
   const {
     data: itemData,
     isLoading: itemLoading,
@@ -83,6 +83,7 @@ function LecturePage() {
         fetchContent(batchId, subjectId, "Videos", topicId, 2),
         fetchContent(batchId, subjectId, "DppVideos", topicId, 1),
         fetchContent(batchId, subjectId, "DppNotes", topicId, 1),
+        fetchContent(batchId, subjectId, "notes", topicId, 1),
       ]);
       const all = pages.flat();
       const match = all.find(
@@ -92,14 +93,16 @@ function LecturePage() {
           i.videoDetails?._id === lectureId ||
           i.videoDetails?._id === searchVideoId ||
           i.videoDetails?.id === lectureId ||
-          i.videoDetails?.id === searchVideoId,
+          i.videoDetails?.id === searchVideoId ||
+          (i.url && extractVideoId(i.url) === lectureId),
       );
       if (match) return match;
 
-      // Fallback: untagged videos and DPP videos
+      // Fallback: untagged videos, DPP videos, notes
       const untagged = await Promise.all([
         fetchContent(batchId, subjectId, "Videos", undefined, 1),
         fetchContent(batchId, subjectId, "DppVideos", undefined, 1),
+        fetchContent(batchId, subjectId, "notes", undefined, 1),
       ]);
       return (
         untagged
@@ -111,53 +114,99 @@ function LecturePage() {
               i.videoDetails?._id === lectureId ||
               i.videoDetails?._id === searchVideoId ||
               i.videoDetails?.id === lectureId ||
-              i.videoDetails?.id === searchVideoId,
+              i.videoDetails?.id === searchVideoId ||
+              (i.url && extractVideoId(i.url) === lectureId),
           ) ?? null
       );
     },
   });
 
-  // 2. Query direct video stream using https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}&batchId={batchId}
-  const { data: videoData, isLoading: videoLoading } = useQuery({
-    queryKey: ["lecture-video-stream", batchId, lectureId, searchVideoId, itemData?._id],
-    queryFn: async () => {
-      // CRITICAL ID RULE: Use TOP-LEVEL content item ID (itemData?._id || lectureId)
-      // NEVER pass nested item.videoDetails._id
-      const topLevelChildId = itemData?._id || lectureId;
+  // CRITICAL ID RULE: The childId parameter MUST be the TOP-LEVEL content item ID (item._id)
+  // NEVER the nested item.videoDetails._id or video stream ID!
+  // If itemData resolved, itemData._id is strictly the top-level ID (e.g., "6a8ae8f0ea10b9d29631c310")
+  const resolvedTopLevelId =
+    itemData?._id ||
+    (itemData?.videoDetails?._id && lectureId === itemData.videoDetails._id
+      ? itemData._id
+      : lectureId);
 
-      // 1. Primary: Official PiMaxer video-url-details endpoint
-      if (batchId && topLevelChildId) {
-        const vDetails = await fetchVideoUrlDetails(batchId, topLevelChildId);
-        if (vDetails?.videoUrl) return vDetails;
+  // Sync browser URL if opened with nested videoDetails._id so address bar shows the true top-level ID
+  useEffect(() => {
+    if (itemData?._id && itemData._id !== lectureId && typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const correctedPath = currentPath.replace(lectureId, itemData._id);
+      if (correctedPath !== currentPath) {
+        window.history.replaceState(null, "", correctedPath + window.location.search);
       }
+    }
+  }, [itemData?._id, lectureId]);
 
-      // 2. Fallback 1: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
-      const directVideo = await fetchVideoById(topLevelChildId);
-      if (directVideo?.videoUrl) return directVideo;
+  // 2. Query direct video stream using https://a.pimaxer.in/v1/video-url-details?parentId={batchId}&childId={lectureId}
+  // CRITICAL: enabled is false while itemLoading so video-url-details receives resolved lecture ID
+  const { data: videoData, isLoading: videoLoading } = useQuery({
+    queryKey: ["lecture-video-stream", batchId, resolvedTopLevelId, itemData?._id],
+    enabled: Boolean(batchId && !itemLoading && resolvedTopLevelId),
+    queryFn: async () => {
+      const topLevelChildId = itemData?._id || resolvedTopLevelId;
+      if (!topLevelChildId || !batchId) return null;
 
-      // 3. Fallback 2: Direct MP4 stream CDN or resolvePlayback
-      const playback = await resolvePlayback(
-        batchId,
-        subjectId,
-        topLevelChildId,
-        itemData?.videoDetails?.videoUrl || itemData?.url,
-      );
-      if (playback?.src) {
+      // 1. Primary: Official PiMaxer video-url-details endpoint with top-level ID (item._id)
+      const vDetails = await fetchVideoUrlDetails(batchId, topLevelChildId);
+      if (vDetails?.videoUrl) return vDetails;
+
+      // Bottom video ID (from itemData.videoDetails._id or stream URL)
+      const bottomVideoId =
+        itemData?.videoDetails?._id ||
+        itemData?.videoDetails?.id ||
+        (itemData?.url ? extractVideoId(itemData.url) : null);
+
+      // 2. Direct videoDetails stream URL (if available)
+      if (itemData?.videoDetails?.videoUrl) {
         return {
           _id: topLevelChildId,
-          videoUrl: playback.src,
+          videoUrl: normalizeStreamUrl(itemData.videoDetails.videoUrl),
           name: itemData?.topic || itemData?.name || searchTitle,
           duration: itemData?.videoDetails?.duration,
           image: itemData?.videoDetails?.image,
         };
       }
 
+      // 3. Item direct stream URL (if available)
+      if (itemData?.url) {
+        return {
+          _id: topLevelChildId,
+          videoUrl: normalizeStreamUrl(itemData.url),
+          name: itemData?.topic || itemData?.name || searchTitle,
+          duration: itemData?.videoDetails?.duration,
+          image: itemData?.videoDetails?.image,
+        };
+      }
+
+      // 4. Direct stream CDN using bottom video ID
+      if (bottomVideoId) {
+        return {
+          _id: topLevelChildId,
+          videoUrl: `https://a.pimaxer.in/stream/${bottomVideoId}/video.mp4`,
+          name: itemData?.topic || itemData?.name || searchTitle,
+          duration: itemData?.videoDetails?.duration,
+          image: itemData?.videoDetails?.image,
+        };
+      }
+
+      // 5. Fallback: Direct video endpoint https://a.pimaxer.in/v1/videos/{videoId}
+      if (bottomVideoId) {
+        const directVideo = await fetchVideoById(bottomVideoId);
+        if (directVideo?.videoUrl) return directVideo;
+      }
+      const directVideoTop = await fetchVideoById(topLevelChildId);
+      if (directVideoTop?.videoUrl) return directVideoTop;
+
       return null;
     },
   });
 
-  // Loading while video stream details are fetching
-  const isOverallLoading = !videoData && (videoLoading || itemLoading);
+  // Loading while item or video stream details are fetching
+  const isOverallLoading = itemLoading || (!videoData && videoLoading);
 
   const handlePreviewPdf = (att: Attachment) => {
     const rawUrl = att.url || att.download_url || att.fileUrl || "";
@@ -210,12 +259,12 @@ function LecturePage() {
 
       {!isOverallLoading && (
         <LecturePlayerView
-          item={itemData ?? { _id: lectureId }}
+          item={itemData ?? { _id: resolvedTopLevelId }}
           videoData={videoData}
           batchId={batchId}
           subjectId={subjectId}
           topicId={topicId}
-          lectureId={lectureId}
+          lectureId={resolvedTopLevelId}
           onPreviewPdf={handlePreviewPdf}
         />
       )}
@@ -369,6 +418,27 @@ function LecturePlayerView({
         video.play().catch(() => {});
       });
 
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              if (item?.videoDetails?.videoUrl && video) {
+                video.src = item.videoDetails.videoUrl;
+                video.load();
+                video.play().catch(() => {});
+              }
+              break;
+          }
+        }
+      });
+
       hls.loadSource(proxiedHls);
       hls.attachMedia(video);
       return () => {
@@ -389,7 +459,7 @@ function LecturePlayerView({
       video.load();
       video.play().catch(() => {});
     }
-  }, [streamUrl, isDirectMp4]);
+  }, [streamUrl, isDirectMp4, item?.videoDetails?.videoUrl]);
 
   const handleQualityChange = (levelIndex: number) => {
     setCurrentQualityIndex(levelIndex);
