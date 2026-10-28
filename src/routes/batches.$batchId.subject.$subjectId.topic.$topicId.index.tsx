@@ -14,6 +14,10 @@ import {
   Plus,
   Loader2,
   CheckCircle2,
+  Video,
+  ClipboardList,
+  Clapperboard,
+  FileCheck2,
 } from "lucide-react";
 import {
   API_BASE,
@@ -28,13 +32,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PDFActionDialog } from "@/components/PDFActionDialog";
 import { formatSimpleDate } from "@/lib/dates";
 
-// Supported Content Types: videos, DppVideos, notes, DppNotes, Test
-const TABS: { key: ContentType; label: string }[] = [
-  { key: "videos", label: "📹 Lectures" },
-  { key: "notes", label: "📝 Notes" },
-  { key: "DppNotes", label: "📋 DPP Sheets" },
-  { key: "DppVideos", label: "🎬 DPP Videos" },
-  { key: "Test", label: "📝 Test Papers" },
+// Supported Content Types with dedicated Lucide icons
+const TABS: {
+  key: ContentType;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { key: "videos", label: "Lectures", icon: Video },
+  { key: "notes", label: "Notes", icon: FileText },
+  { key: "DppNotes", label: "DPP Sheets", icon: ClipboardList },
+  { key: "DppVideos", label: "DPP Videos", icon: Clapperboard },
+  { key: "Test", label: "Test Papers", icon: FileCheck2 },
 ];
 
 export const Route = createFileRoute("/batches/$batchId/subject/$subjectId/topic/$topicId/")({
@@ -145,25 +153,33 @@ function TopicPage() {
       />
       <PageTitle title={name ?? "Chapter"} />
 
-      {/* Filter Tabs - Mixing Chosen Primary Color */}
-      <div className="mb-6 inline-flex rounded-2xl bg-muted/80 p-1.5 border border-primary/20 shadow-xs">
-        {TABS.map((t) => {
-          const isActive = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 scale-[1.02]"
-                  : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+      {/* Filter Tabs - Phone-Compact 5-Column Grid, Zero Horizontal Overflow */}
+      <div className="mb-6 w-full max-w-full">
+        <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-muted/80 border border-primary/20 shadow-xs w-full">
+          {TABS.map((t) => {
+            const isActive = tab === t.key;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all cursor-pointer min-w-0 select-none ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 mb-1 shrink-0 ${isActive ? "stroke-[2.5]" : "stroke-[2]"}`}
+                />
+                <span className="text-[10px] sm:text-xs font-bold truncate w-full text-center block">
+                  {t.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {isLoading && <Loading />}
@@ -371,12 +387,12 @@ function VideoRow({
     (isDpp ? "DPP Solution Video" : "Lecture");
 
   return (
-    <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 bg-card border border-primary/20 hover:border-primary/60 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl">
+    <div className="card-surface group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 bg-card border border-primary/20 hover:border-primary/60 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl w-full max-w-full min-w-0 overflow-hidden">
       <Link
         to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
         params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
         search={{ videoId: targetLectureId, title }}
-        className="flex items-center gap-3.5 min-w-0 flex-1"
+        className="flex items-center gap-3.5 min-w-0 flex-1 max-w-full"
       >
         {thumb ? (
           <div className="relative h-18 w-28 flex-none overflow-hidden rounded-xl bg-muted border border-border">
@@ -413,7 +429,7 @@ function VideoRow({
         </div>
       </Link>
 
-      <div className="flex items-center gap-2 self-end sm:self-center pr-1">
+      <div className="flex items-center gap-2 self-end sm:self-center pr-1 shrink-0">
         <Link
           to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
           params={{ batchId, subjectId, topicId, lectureId: targetLectureId }}
@@ -464,7 +480,7 @@ function DocRow({
 
   if (homeworks.length > 0) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 w-full max-w-full min-w-0">
         {homeworks.map((hw, idx) => {
           const hwFiles: { name: string; url: string }[] = [];
           for (const a of hw.attachmentIds ?? []) {
@@ -500,16 +516,18 @@ function DocRow({
           return (
             <div
               key={hw._id ?? `${item._id}-hw-${idx}`}
-              className="card-surface p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl"
+              className="card-surface p-4 sm:p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl w-full max-w-full min-w-0 overflow-hidden"
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 min-w-0">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full shrink-0">
                       {isTest ? "Question Paper" : isDpp ? "DPP Study Material" : "Study Material"}
                     </span>
                   </div>
-                  <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
+                  <h2 className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                    {title}
+                  </h2>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-medium">
                     {hw.note && <span>{hw.note}</span>}
                     {item.startTime && (
@@ -522,18 +540,18 @@ function DocRow({
                 </div>
               </div>
 
-              <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+              <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border w-full max-w-full min-w-0">
                 {hwFiles.map((f, i) => (
                   <button
                     key={`${f.url}-${i}`}
                     type="button"
                     onClick={() => onPreviewPdf?.(f)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer max-w-full min-w-0"
                   >
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">
                       {isTest ? "Question Paper" : "Open PDF"} (
-                      {f.name.length > 22 ? `${f.name.slice(0, 20)}…` : f.name})
+                      {f.name.length > 20 ? `${f.name.slice(0, 18)}…` : f.name})
                     </span>
                   </button>
                 ))}
@@ -544,7 +562,7 @@ function DocRow({
                     to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
                     params={{ batchId, subjectId, topicId, lectureId: solutionVideoId }}
                     search={{ videoId: solutionVideoId, title: `Solution: ${title}` }}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer shrink-0"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
                     <span>Watch Solution Video</span>
@@ -574,15 +592,15 @@ function DocRow({
     (isTest ? "Question Paper" : isDpp ? "DPP Practice Sheet" : "Notes");
 
   return (
-    <div className="card-surface p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <div className="card-surface p-4 sm:p-4.5 bg-card border border-primary/20 hover:border-primary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 rounded-2xl w-full max-w-full min-w-0 overflow-hidden">
+      <div className="flex items-start justify-between gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-500/15 border border-orange-500/30 px-2 py-0.5 rounded-full shrink-0">
               {isTest ? "Question Paper" : isDpp ? "DPP Sheet" : "Chapter Notes"}
             </span>
           </div>
-          <h2 className="text-sm font-bold text-foreground leading-snug">{title}</h2>
+          <h2 className="text-sm font-bold text-foreground leading-snug line-clamp-2">{title}</h2>
           <p suppressHydrationWarning className="mt-1 text-xs text-muted-foreground font-medium">
             {item.startTime ? formatSimpleDate(item.startTime) : item.status}
           </p>
@@ -592,18 +610,18 @@ function DocRow({
         </div>
       </div>
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+      <div className="mt-3.5 flex flex-wrap items-center gap-2 pt-3 border-t border-border w-full max-w-full min-w-0">
         {files.map((f, i) => (
           <button
             key={`${f.url}-${i}`}
             type="button"
             onClick={() => onPreviewPdf?.(f)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 shadow-xs transition-all hover:bg-orange-500/25 hover:scale-[1.02] cursor-pointer max-w-full min-w-0"
           >
-            <FileText className="h-3.5 w-3.5" />
-            <span>
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
               {isTest ? "Question Paper" : "Open PDF"} (
-              {f.name.length > 22 ? `${f.name.slice(0, 20)}…` : f.name})
+              {f.name.length > 20 ? `${f.name.slice(0, 18)}…` : f.name})
             </span>
           </button>
         ))}
@@ -614,7 +632,7 @@ function DocRow({
             to="/batches/$batchId/subject/$subjectId/topic/$topicId/lecture/$lectureId"
             params={{ batchId, subjectId, topicId, lectureId: solutionVideoId }}
             search={{ videoId: solutionVideoId, title: `Solution: ${title}` }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow-xs shadow-primary/20 transition hover:opacity-90 hover:scale-105 cursor-pointer shrink-0"
           >
             <Play className="h-3.5 w-3.5 fill-current" />
             <span>Watch Video Solution</span>

@@ -281,7 +281,7 @@ function BatchesPage() {
 
         {/* CATEGORY FILTER CHIPS (VISIBLE ON ALL BATCHES TAB) */}
         {!isEnrolledTab && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full max-w-full">
             {CATEGORY_CHIPS.map((chip) => {
               const active = selectedCategory === chip.id;
               return (

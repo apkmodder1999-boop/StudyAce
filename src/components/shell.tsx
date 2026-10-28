@@ -196,14 +196,14 @@ export function Shell({ children }: { children: ReactNode }) {
       </div>
 
       {/* TOP HEADER */}
-      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md text-foreground border-b border-border shadow-xs transition-colors">
-        <div className="mx-auto flex max-w-[1100px] items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3">
+      <header className="sticky top-0 z-30 w-full max-w-full bg-card/95 backdrop-blur-md text-foreground border-b border-border shadow-xs transition-colors">
+        <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 min-w-0">
           {/* Left: Hamburger & Brand Name */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              className="h-9 w-9 rounded-full hover:bg-muted flex items-center justify-center text-foreground transition cursor-pointer"
+              className="h-9 w-9 rounded-full hover:bg-muted flex items-center justify-center text-foreground transition cursor-pointer shrink-0"
               title="Open Menu"
               aria-label="Open Menu"
             >
@@ -213,30 +213,30 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               to="/"
               search={{ tab: "all" }}
-              className="flex items-center gap-2 hover:opacity-90 transition"
+              className="flex items-center gap-2 hover:opacity-90 transition min-w-0"
             >
-              <div className="h-7 w-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-xs">
+              <div className="h-7 w-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black text-xs shadow-xs shrink-0">
                 PW
               </div>
-              <span className="font-black text-sm sm:text-base tracking-tight text-foreground hidden sm:inline">
+              <span className="font-black text-sm sm:text-base tracking-tight text-foreground hidden sm:inline truncate">
                 Physics Wallah
               </span>
             </Link>
           </div>
 
           {/* Right: Enrolled Count Pill, Telegram, & UI Color Picker */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               to="/"
               search={{ tab: "enrolled" }}
-              className="flex items-center gap-1.5 rounded-full bg-primary/10 hover:bg-primary/20 px-3 py-1 text-xs font-bold text-foreground transition border border-primary/20"
+              className="flex items-center gap-1.5 rounded-full bg-primary/10 hover:bg-primary/20 px-2.5 sm:px-3 py-1 text-xs font-bold text-foreground transition border border-primary/20 shrink-0"
               title="View Enrolled Batches"
             >
-              <BookmarkCheck className="h-3.5 w-3.5 text-primary" />
-              <span>My Batches</span>
+              <BookmarkCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="hidden xs:inline">My Batches</span>
               <span
                 suppressHydrationWarning
-                className="ml-0.5 rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-mono font-black"
+                className="rounded-full bg-primary text-primary-foreground px-1.5 py-0.2 text-[10px] font-mono font-black"
               >
                 {isMounted ? enrolledCount : 0}
               </span>
@@ -247,27 +247,31 @@ export function Shell({ children }: { children: ReactNode }) {
               href="https://t.me/+7htXdqnvL0JiYjc1"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition cursor-pointer"
+              className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-primary transition cursor-pointer shrink-0"
               title="Join Telegram Channel"
             >
               <Send className="h-4 w-4" />
             </a>
 
             {/* UI Colour Selector Trigger */}
-            <UIColorPicker />
+            <div className="shrink-0">
+              <UIColorPicker />
+            </div>
           </div>
         </div>
       </header>
 
       {/* MAIN VIEW CONTENT */}
-      <main className="mx-auto max-w-[1100px] px-3.5 sm:px-4 pt-3 sm:pt-4">{children}</main>
+      <main className="mx-auto w-full max-w-[1100px] px-3.5 sm:px-4 pt-3 sm:pt-4 overflow-x-hidden min-w-0">
+        {children}
+      </main>
 
       {/* FIXED BOTTOM NAVIGATION BAR */}
       <nav
         aria-label="Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-card/98 backdrop-blur-md border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+        className="fixed bottom-0 left-0 right-0 z-40 w-full max-w-full bg-card/98 backdrop-blur-md border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
       >
-        <div className="mx-auto max-w-md flex items-center justify-around py-1.5 px-3">
+        <div className="mx-auto w-full max-w-md flex items-center justify-around py-1.5 px-3">
           {/* Tab 1: All Batches */}
           <Link
             to="/"
@@ -335,12 +339,14 @@ export function PageTitle({
   children?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
+    <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full max-w-full min-w-0">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate max-w-full">
           {title}
         </h1>
-        {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 max-w-full">{subtitle}</p>
+        )}
       </div>
       {children && <div className="shrink-0">{children}</div>}
     </div>
@@ -349,15 +355,18 @@ export function PageTitle({
 
 export function Crumbs({ items }: { items: { label: string; to?: ReactNode }[] }) {
   return (
-    <nav className="mb-3.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+    <nav className="mb-3.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground w-full max-w-full min-w-0 overflow-hidden">
       {items.map((item, index) => (
-        <span key={index} className="inline-flex items-center gap-1.5">
+        <span
+          key={index}
+          className="inline-flex items-center gap-1.5 min-w-0 max-w-[200px] sm:max-w-xs truncate"
+        >
           {item.to ? (
-            <span className="transition hover:text-foreground">{item.to}</span>
+            <span className="transition hover:text-foreground truncate block">{item.to}</span>
           ) : (
-            <span className="font-semibold text-foreground">{item.label}</span>
+            <span className="font-semibold text-foreground truncate block">{item.label}</span>
           )}
-          {index < items.length - 1 && <span className="text-border">/</span>}
+          {index < items.length - 1 && <span className="text-border shrink-0">/</span>}
         </span>
       ))}
     </nav>

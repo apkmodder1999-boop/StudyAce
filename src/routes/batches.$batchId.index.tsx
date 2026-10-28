@@ -183,41 +183,43 @@ function BatchPage() {
           </div>
 
           {/* Official PW Batch Tabs: "All Classes", "About Batch", "Notices" */}
-          <div className="inline-flex rounded-2xl bg-muted/80 p-1 border border-primary/20 shadow-xs">
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab("classes")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "classes"
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                }`}
-              >
-                All Classes ({allSubjects.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("about")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "about"
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                }`}
-              >
-                Batch Overview
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("notices")}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === "notices"
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                }`}
-              >
-                Notices & Updates
-              </button>
+          <div className="w-full max-w-full overflow-x-auto no-scrollbar py-0.5">
+            <div className="inline-flex rounded-2xl bg-muted/80 p-1 border border-primary/20 shadow-xs min-w-max">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("classes")}
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "classes"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                  }`}
+                >
+                  All Classes ({allSubjects.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("about")}
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "about"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                  }`}
+                >
+                  Batch Overview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("notices")}
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "notices"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-[1.01]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                  }`}
+                >
+                  Notices & Updates
+                </button>
+              </div>
             </div>
           </div>
 
