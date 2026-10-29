@@ -60,8 +60,9 @@ const sessionsMap = new Map<string, StudentSession>();
 const recentEvents: LogEvent[] = [];
 const MAX_EVENTS_LIMIT = 500;
 
-let totalAllTimeVisits = 142; // Base seeds to look authentic immediately
-let totalAllTimeStudySeconds = 18450; // ~5.1 hours
+// Strictly Real-Time Data (NO fake seeds, NO dummy numbers)
+let totalAllTimeVisits = 0;
+let totalAllTimeStudySeconds = 0;
 
 export function recordEvent(data: Partial<LogEvent>): LogEvent {
   const now = new Date();
@@ -228,9 +229,9 @@ export function getAdminDashboardStats() {
 
   return {
     overview: {
-      activeOnlineUsers: Math.max(activeOnlineCount, 1), // At least current admin
+      activeOnlineUsers: activeOnlineCount,
       totalVisits: totalAllTimeVisits,
-      dailyActiveUsers: Math.max(dailyActiveUsersCount, 1),
+      dailyActiveUsers: dailyActiveUsersCount,
       totalStudySeconds: totalAllTimeStudySeconds,
       totalStudyFormatted: formatDuration(totalAllTimeStudySeconds),
       totalRegisteredStudents: sessions.length,
@@ -241,14 +242,9 @@ export function getAdminDashboardStats() {
 }
 
 function getAnonymousName(sessionId: string): string {
-  // Deterministic friendly name from session hash
-  let hash = 0;
-  for (let i = 0; i < sessionId.length; i++) {
-    hash = (hash << 5) - hash + sessionId.charCodeAt(i);
-    hash |= 0;
-  }
-  const idNum = Math.abs(hash % 9000) + 1000;
-  return `Aspirant #${idNum}`;
+  // Real session identifier if student has not entered a name yet
+  const shortId = sessionId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6) || "Guest";
+  return `Visitor_${shortId}`;
 }
 
 function detectDevice(userAgent: string): string {
