@@ -2,7 +2,13 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { processTelegramLog, CORS_HEADERS } from "./lib/telegram-logger";
+import {
+  processTelegramLog,
+  handleTelegramWebhook,
+  getRegisteredGroups,
+  syncDiscoveredChats,
+  CORS_HEADERS,
+} from "./lib/telegram-logger";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -56,6 +62,27 @@ export default {
           return new Response(null, { status: 204, headers: CORS_HEADERS });
         }
         return await processTelegramLog(request, env as Record<string, string> | undefined);
+      }
+
+      // Real-time Telegram Webhook for Auto-Discovery
+      if (url.pathname === "/api/telegram-webhook") {
+        if (request.method === "OPTIONS") {
+          return new Response(null, { status: 204, headers: CORS_HEADERS });
+        }
+        return await handleTelegramWebhook(request);
+      }
+
+      // Status check showing all auto-discovered active groups
+      if (url.pathname === "/api/telegram-status") {
+        await syncDiscoveredChats();
+        return new Response(
+          JSON.stringify({
+            status: "active",
+            autoDiscoveryEnabled: true,
+            registeredGroups: getRegisteredGroups(),
+          }),
+          { status: 200, headers: CORS_HEADERS },
+        );
       }
 
       const handler = await getServerEntry();
