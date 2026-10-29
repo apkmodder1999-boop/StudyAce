@@ -113,8 +113,7 @@ function AdminPage() {
     if (typeof window !== "undefined") {
       const savedPass =
         sessionStorage.getItem("pw_admin_passcode") || localStorage.getItem("pw_admin_passcode");
-      if (savedPass && savedPass.trim().toUpperCase() === "NAITIK") {
-        setIsAuthenticated(true);
+      if (savedPass) {
         fetchStats(savedPass.trim());
       }
     }
@@ -123,24 +122,40 @@ function AdminPage() {
   // Poll live data every 10 seconds when authenticated
   useEffect(() => {
     if (!isAuthenticated) return;
-    const currentPass = sessionStorage.getItem("pw_admin_passcode") || "NAITIK";
+    const currentPass = sessionStorage.getItem("pw_admin_passcode") || "";
+    if (!currentPass) return;
     const interval = setInterval(() => {
       fetchStats(currentPass, true);
     }, 10000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!passcode.trim()) {
+      setErrorMsg("Please enter the passcode.");
+      return;
+    }
     setErrorMsg("");
+    setLoading(true);
 
-    const trimmed = passcode.trim().toUpperCase();
-    if (trimmed === "NAITIK") {
-      sessionStorage.setItem("pw_admin_passcode", "NAITIK");
-      setIsAuthenticated(true);
-      fetchStats("NAITIK");
-    } else {
-      setErrorMsg("Incorrect Passcode. Access Denied.");
+    try {
+      const authPass = passcode.trim();
+      const res = await fetch(`/api/admin/stats?passcode=${encodeURIComponent(authPass)}`, {
+        headers: { "x-admin-passcode": authPass },
+      });
+      if (res.ok) {
+        const data = (await res.json()) as DashboardData;
+        sessionStorage.setItem("pw_admin_passcode", authPass);
+        setStats(data);
+        setIsAuthenticated(true);
+      } else {
+        setErrorMsg("Incorrect Passcode. Access Denied.");
+      }
+    } catch {
+      setErrorMsg("Failed to connect to server. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -161,6 +176,7 @@ function AdminPage() {
       if (res.ok) {
         const data = (await res.json()) as DashboardData;
         setStats(data);
+        setIsAuthenticated(true);
       } else {
         if (!isSilent) setErrorMsg("Session expired or invalid passcode.");
         setIsAuthenticated(false);
@@ -181,8 +197,8 @@ function AdminPage() {
         body: JSON.stringify({ sessionId, name: editingNameValue.trim() }),
       });
       setEditingStudentId(null);
-      const currentPass = sessionStorage.getItem("pw_admin_passcode") || "NAITIK";
-      fetchStats(currentPass, true);
+      const currentPass = sessionStorage.getItem("pw_admin_passcode") || "";
+      if (currentPass) fetchStats(currentPass, true);
       if (selectedStudent && selectedStudent.sessionId === sessionId) {
         setSelectedStudent((prev) =>
           prev ? { ...prev, studentName: editingNameValue.trim() } : null,
@@ -248,7 +264,7 @@ function AdminPage() {
                   type="password"
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter passcode (e.g. NAITIK)..."
+                  placeholder="Enter secret passcode..."
                   autoFocus
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
                 />
@@ -263,19 +279,13 @@ function AdminPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-primary hover:opacity-95 active:scale-[0.98] font-bold text-sm text-primary-foreground shadow-lg shadow-primary/25 transition cursor-pointer flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-primary hover:opacity-95 active:scale-[0.98] font-bold text-sm text-primary-foreground shadow-lg shadow-primary/25 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Unlock className="h-4 w-4" />
-                <span>Unlock Dashboard</span>
+                <span>{loading ? "Verifying..." : "Unlock Dashboard"}</span>
               </button>
             </form>
-
-            <div className="mt-5 pt-4 border-t border-border flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
-              <span>Passcode:</span>
-              <code className="bg-muted px-2 py-0.5 rounded font-mono font-bold text-primary">
-                NAITIK
-              </code>
-            </div>
           </div>
         </div>
       </Shell>
@@ -308,16 +318,17 @@ function AdminPage() {
                   Live Sync
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Passcode verified: <code className="font-mono text-primary font-bold">NAITIK</code>
-              </p>
+              <p className="text-xs text-muted-foreground">Real-time Visitor & Study Telemetry</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-center">
             <button
               type="button"
-              onClick={() => fetchStats("NAITIK")}
+              onClick={() => {
+                const pass = sessionStorage.getItem("pw_admin_passcode") || "";
+                if (pass) fetchStats(pass);
+              }}
               disabled={loading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background hover:bg-muted text-xs font-bold text-foreground transition cursor-pointer"
               title="Refresh live metrics"

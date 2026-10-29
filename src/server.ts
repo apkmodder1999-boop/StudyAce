@@ -93,8 +93,8 @@ export default {
         }
         const passcode =
           request.headers.get("x-admin-passcode") || url.searchParams.get("passcode") || "";
-
-        if (passcode.trim().toUpperCase() !== "NAITIK") {
+        const expectedPasscode = (process.env.ADMIN_PASSCODE || "NAITIK").trim().toUpperCase();
+        if (passcode.trim().toUpperCase() !== expectedPasscode) {
           return new Response(JSON.stringify({ error: "Unauthorized. Passcode incorrect." }), {
             status: 401,
             headers: CORS_HEADERS,
