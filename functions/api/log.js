@@ -21,7 +21,7 @@ export async function onRequestOptions() {
 // Optional GET endpoint for status check
 export async function onRequestGet({ env }) {
   const botToken = env?.TELEGRAM_BOT_TOKEN || "9228345264:AAHEk7y5pZ4J8_ksHVP7-X7QpJRakcyk7fA";
-  const chatId = env?.TELEGRAM_CHAT_ID || "-5563350545";
+  const chatId = env?.TELEGRAM_CHAT_ID || "-1003992869146";
 
   return new Response(
     JSON.stringify({
@@ -37,7 +37,7 @@ export async function onRequestGet({ env }) {
 export async function onRequestPost({ request, env }) {
   try {
     const botToken = env?.TELEGRAM_BOT_TOKEN || "9228345264:AAHEk7y5pZ4J8_ksHVP7-X7QpJRakcyk7fA";
-    const chatId = env?.TELEGRAM_CHAT_ID || "-5563350545";
+    const chatId = env?.TELEGRAM_CHAT_ID || "-1003992869146";
 
     if (!botToken || !chatId) {
       return new Response(
@@ -172,19 +172,37 @@ export async function onRequestPost({ request, env }) {
     }
 
     // 4. Send request to Telegram Bot API
+    // 4. Send request to Telegram Bot API (with auto-migration support)
     const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const tgResponse = await fetch(telegramApiUrl, {
+    let targetChatId = chatId;
+    let tgResponse = await fetch(telegramApiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: targetChatId,
         text: message,
         parse_mode: "HTML",
         disable_web_page_preview: true,
       }),
     });
 
-    const tgResult = await tgResponse.json();
+    let tgResult = await tgResponse.json();
+
+    // Auto-retry if group was migrated to supergroup
+    if (!tgResponse.ok && tgResult?.parameters?.migrate_to_chat_id) {
+      targetChatId = tgResult.parameters.migrate_to_chat_id;
+      tgResponse = await fetch(telegramApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: targetChatId,
+          text: message,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
+      });
+      tgResult = await tgResponse.json();
+    }
 
     if (!tgResponse.ok) {
       return new Response(

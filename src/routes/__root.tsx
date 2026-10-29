@@ -139,6 +139,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         {children}
         <Scripts />
+        <script src="/tracker.js" async />
       </body>
     </html>
   );
