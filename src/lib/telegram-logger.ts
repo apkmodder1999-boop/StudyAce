@@ -3,6 +3,8 @@
  * Automatically discovers any group or channel the bot is added to and broadcasts logs.
  */
 
+import { recordEvent, type LogEvent } from "./admin-store";
+
 export const TELEGRAM_BOT_TOKEN = "9228345264:AAHEk7y5pZ4J8_ksHVP7-X7QpJRakcyk7fA";
 export const DEFAULT_CHAT_ID = "-1003992869146";
 
@@ -308,6 +310,10 @@ export async function processTelegramLog(request: Request, customEnv?: Record<st
       : undefined;
     const pageUrl = body["pageUrl"] ? String(body["pageUrl"]) : undefined;
     const extra = body["extra"];
+    const studentName = body["studentName"] ? String(body["studentName"]) : undefined;
+    const sessionId = body["sessionId"] ? String(body["sessionId"]) : undefined;
+    const watchSeconds =
+      typeof body["watchSeconds"] === "number" ? (body["watchSeconds"] as number) : undefined;
 
     const ip =
       request.headers.get("cf-connecting-ip") ||
@@ -327,6 +333,22 @@ export async function processTelegramLog(request: Request, customEnv?: Record<st
     } catch {
       // keep raw
     }
+
+    // Record into Admin Analytics Store
+    recordEvent({
+      sessionId,
+      studentName,
+      eventType: (eventType || "page_visit") as LogEvent["eventType"],
+      subject,
+      chapter,
+      lectureTitle,
+      watchTime,
+      watchSeconds,
+      screenResolution,
+      pageUrl,
+      ip,
+      userAgent,
+    });
 
     let eventIcon = "👀";
     let eventLabel = "Page Visit";

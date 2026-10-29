@@ -5,14 +5,39 @@
 (function () {
   "use strict";
 
-  // Endpoint URL (Defaults to current host's /api/log)
   var LOG_ENDPOINT = "/api/log";
+  var HEARTBEAT_ENDPOINT = "/api/heartbeat";
+
+  // Persistent Client Session ID
+  function getSessionId() {
+    try {
+      var id = localStorage.getItem("pw_session_id");
+      if (!id) {
+        id = "std_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 8);
+        localStorage.setItem("pw_session_id", id);
+      }
+      return id;
+    } catch (e) {
+      return "std_guest";
+    }
+  }
+
+  // Get or prompt student name
+  function getStudentName() {
+    try {
+      return localStorage.getItem("pw_student_name") || "";
+    } catch (e) {
+      return "";
+    }
+  }
 
   // Reusable helper to send data via Beacon or fetch keepalive
   function sendLog(payload) {
     try {
       var data = Object.assign(
         {
+          sessionId: getSessionId(),
+          studentName: getStudentName(),
           screenResolution: window.screen
             ? window.screen.width + "x" + window.screen.height
             : "Unknown",
@@ -24,28 +49,21 @@
 
       var jsonStr = JSON.stringify(data);
 
-      // Prefer navigator.sendBeacon when closing/unloading page
       if (navigator.sendBeacon) {
         var blob = new Blob([jsonStr], { type: "application/json" });
         var sent = navigator.sendBeacon(LOG_ENDPOINT, blob);
         if (sent) return;
       }
 
-      // Fallback to fetch with keepalive: true
       fetch(LOG_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: jsonStr,
         keepalive: true,
-      }).catch(function () {
-        // Silently swallow errors on client
-      });
-    } catch (e) {
-      // Avoid breaking host app
-    }
+      }).catch(function () {});
+    } catch (e) {}
   }
 
-  // Format seconds into clean "Xm Ys" format
   function formatSeconds(secs) {
     var s = Math.floor(secs || 0);
     var h = Math.floor(s / 3600);
@@ -104,10 +122,11 @@
       document.querySelector("h1, h2, .lecture-title")?.innerText ||
       "Video Lecture";
 
-    if (accumulatedWatchSeconds >= 5) {
+    if (accumulatedWatchSeconds >= 3) {
       sendLog({
         eventType: "lecture_pause",
         lectureTitle: title,
+        watchSeconds: Math.floor(accumulatedWatchSeconds),
         watchTime:
           formatSeconds(accumulatedWatchSeconds) +
           " (Pos: " +
@@ -117,7 +136,6 @@
     }
   }
 
-  // Auto-attach listeners to existing & dynamically created <video> elements
   function attachVideoListeners() {
     var videos = document.querySelectorAll("video");
     videos.forEach(function (v) {
@@ -129,7 +147,7 @@
     });
   }
 
-  // Listen when user switches tab or closes browser
+  // Handle Tab Close / Unload
   function onPageUnload() {
     if (isPlaying && activeVideo) {
       var sessionSeconds = (Date.now() - watchStartTime) / 1000;
@@ -144,6 +162,7 @@
       sendLog({
         eventType: "lecture_progress",
         lectureTitle: title,
+        watchSeconds: Math.floor(accumulatedWatchSeconds),
         watchTime: formatSeconds(accumulatedWatchSeconds) + " watched",
       });
     }
@@ -152,7 +171,7 @@
   window.addEventListener("pagehide", onPageUnload);
   window.addEventListener("beforeunload", onPageUnload);
 
-  // Auto-listen to clicks on PDF or Document links/buttons
+  // Auto-listen to PDF clicks
   document.addEventListener("click", function (e) {
     var target = e.target.closest("a, button");
     if (!target) return;
@@ -175,7 +194,7 @@
     }
   });
 
-  // Watch for new <video> elements added dynamically to DOM
+  // Watch for dynamically loaded videos
   if (window.MutationObserver) {
     var observer = new MutationObserver(function () {
       attachVideoListeners();
@@ -183,16 +202,49 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  // Initial check
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", attachVideoListeners);
   } else {
     attachVideoListeners();
   }
 
-  // Expose Global Helper API for explicit manual logging
+  // Periodic heartbeat every 25 seconds for online user presence
+  setInterval(function () {
+    try {
+      var addedSeconds = 0;
+      if (isPlaying && watchStartTime) {
+        addedSeconds = Math.floor((Date.now() - watchStartTime) / 1000);
+        watchStartTime = Date.now();
+      }
+
+      fetch(HEARTBEAT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: getSessionId(),
+          studentName: getStudentName(),
+          watchSeconds: addedSeconds,
+          pageUrl: window.location.href,
+        }),
+      }).catch(function () {});
+    } catch (e) {}
+  }, 25000);
+
+  // Global manual helper API
   window.PWLogger = {
     log: sendLog,
+    getSessionId: getSessionId,
+    getStudentName: getStudentName,
+    setStudentName: function (name) {
+      try {
+        localStorage.setItem("pw_student_name", name.trim());
+        sendLog({
+          eventType: "page_visit",
+          studentName: name.trim(),
+          extra: { action: "student_identified", name: name.trim() },
+        });
+      } catch (e) {}
+    },
     logLecture: function (action, details) {
       sendLog(
         Object.assign(

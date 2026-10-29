@@ -9,6 +9,7 @@ import {
   syncDiscoveredChats,
   CORS_HEADERS,
 } from "./lib/telegram-logger";
+import { getAdminDashboardStats, updateStudentName, recordEvent } from "./lib/admin-store";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -83,6 +84,72 @@ export default {
           }),
           { status: 200, headers: CORS_HEADERS },
         );
+      }
+
+      // Admin Dashboard Protected Stats API (Passcode: NAITIK)
+      if (url.pathname === "/api/admin/stats") {
+        if (request.method === "OPTIONS") {
+          return new Response(null, { status: 204, headers: CORS_HEADERS });
+        }
+        const passcode =
+          request.headers.get("x-admin-passcode") || url.searchParams.get("passcode") || "";
+
+        if (passcode.trim().toUpperCase() !== "NAITIK") {
+          return new Response(JSON.stringify({ error: "Unauthorized. Passcode incorrect." }), {
+            status: 401,
+            headers: CORS_HEADERS,
+          });
+        }
+
+        const stats = getAdminDashboardStats();
+        return new Response(JSON.stringify(stats), {
+          status: 200,
+          headers: CORS_HEADERS,
+        });
+      }
+
+      // Admin or User update student name
+      if (url.pathname === "/api/admin/update-name" && request.method === "POST") {
+        try {
+          const body = (await request.json()) as { sessionId?: string; name?: string };
+          if (body.sessionId && body.name) {
+            updateStudentName(body.sessionId, body.name);
+          }
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: CORS_HEADERS,
+          });
+        } catch {
+          return new Response(JSON.stringify({ error: "Invalid payload" }), {
+            status: 400,
+            headers: CORS_HEADERS,
+          });
+        }
+      }
+
+      // Client Heartbeat API: keeps online user status & study seconds updated
+      if (url.pathname === "/api/heartbeat" && request.method === "POST") {
+        try {
+          const body = (await request.json()) as Record<string, unknown>;
+          recordEvent({
+            sessionId: body["sessionId"] as string | undefined,
+            studentName: body["studentName"] as string | undefined,
+            eventType: "heartbeat",
+            watchSeconds: Number(body["watchSeconds"] || 0),
+            pageUrl: body["pageUrl"] as string | undefined,
+            ip: request.headers.get("cf-connecting-ip") || "Client",
+            userAgent: request.headers.get("user-agent") || "Web Browser",
+          });
+          return new Response(JSON.stringify({ status: "alive" }), {
+            status: 200,
+            headers: CORS_HEADERS,
+          });
+        } catch {
+          return new Response(JSON.stringify({ status: "ok" }), {
+            status: 200,
+            headers: CORS_HEADERS,
+          });
+        }
       }
 
       const handler = await getServerEntry();
