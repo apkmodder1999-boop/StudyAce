@@ -1,11 +1,15 @@
 {
   "name": "tanstack_start_ts",
   "private": true,
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css",
+    "**/*.css",
+    "src/styles.css"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "NODE_ENV=production vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "preview:cf": "wrangler pages dev dist",

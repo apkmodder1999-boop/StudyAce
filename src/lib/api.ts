@@ -431,8 +431,6 @@ export async function fetchTopicContent(
   return fetchContent(batchId, subjectId, contentType, topicId, page);
 }
 
-export const PROXY_STREAM_BASE = "https://pw-api-proxy-v1-dc90b930c4fa.herokuapp.com";
-
 /** Normalizes stream URL directly to official PiMaxer CDN and HLS streams */
 export function normalizeStreamUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
@@ -646,11 +644,6 @@ export function attachmentUrl(a: Attachment): string | null {
   if (direct && /^https?:\/\//i.test(direct)) return direct;
   if (a.baseUrl && a.key) return `${a.baseUrl}${a.key}`;
   return null;
-}
-
-/** Direct stream passthrough (no proxy) */
-export function proxyStream(url: string): string {
-  return url;
 }
 
 /** Extracts all available attachments from a content item */
