@@ -194,10 +194,14 @@
     }
   });
 
-  // Watch for dynamically loaded videos
+  // Watch for dynamically loaded videos (debounced to avoid triggering on extension sweeps)
+  var observerTimeout = null;
   if (window.MutationObserver) {
     var observer = new MutationObserver(function () {
-      attachVideoListeners();
+      if (observerTimeout) clearTimeout(observerTimeout);
+      observerTimeout = setTimeout(function () {
+        attachVideoListeners();
+      }, 200);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
@@ -208,27 +212,8 @@
     attachVideoListeners();
   }
 
-  // Periodic heartbeat every 25 seconds for online user presence
-  setInterval(function () {
-    try {
-      var addedSeconds = 0;
-      if (isPlaying && watchStartTime) {
-        addedSeconds = Math.floor((Date.now() - watchStartTime) / 1000);
-        watchStartTime = Date.now();
-      }
-
-      fetch(HEARTBEAT_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: getSessionId(),
-          studentName: getStudentName(),
-          watchSeconds: addedSeconds,
-          pageUrl: window.location.href,
-        }),
-      }).catch(function () {});
-    } catch (e) {}
-  }, 25000);
+  // Heartbeat disabled to preserve 100k Cloudflare Workers / Functions quota
+  // (Static sites should not run continuous polling to backend endpoints)
 
   // Global manual helper API
   window.PWLogger = {

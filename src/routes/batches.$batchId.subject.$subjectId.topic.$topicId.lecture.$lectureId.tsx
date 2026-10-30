@@ -691,7 +691,9 @@ function LecturePlayerView({
 
                   {/* Playback Speed Selectors */}
                   <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground text-[11px] font-medium mr-0.5">Speed:</span>
+                    <span className="text-muted-foreground text-[11px] font-medium mr-0.5">
+                      Speed:
+                    </span>
                     {[0.75, 1, 1.25, 1.5, 2].map((s) => (
                       <button
                         key={s}
