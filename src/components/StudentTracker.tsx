@@ -89,6 +89,19 @@ export function StudentTracker() {
     setStudentName(clean);
     setIsOpen(false);
 
+    // 1. Direct D1 Database Save
+    fetch("/api/save-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: getSessionId(),
+        name: clean,
+        deviceInfo: `${navigator.userAgent} (${window.screen ? `${window.screen.width}x${window.screen.height}` : "Unknown"})`,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+
+    // 2. Broadcast Page Visit Event
     sendEvent("page_visit", {
       studentName: clean,
       pageTitle: document.title,

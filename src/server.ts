@@ -10,6 +10,7 @@ import {
   CORS_HEADERS,
 } from "./lib/telegram-logger";
 import { getAdminDashboardStats, updateStudentName, recordEvent } from "./lib/admin-store";
+import { getD1Database, saveUserToD1, getUsersFromD1 } from "./lib/d1-user-store";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -57,11 +58,103 @@ export default {
     try {
       const url = new URL(request.url);
 
-      // Handle Telegram Logger API in both Preview & Local server
+      // Dedicated D1 Save User API (Direct SQL INSERT/UPSERT)
+      if (url.pathname === "/api/save-user") {
+        if (request.method === "OPTIONS") {
+          return new Response(null, { status: 204, headers: CORS_HEADERS });
+        }
+        try {
+          const body = (await request.json()) as Record<string, unknown>;
+          const db = getD1Database(env, request);
+          const ip =
+            request.headers.get("cf-connecting-ip") ||
+            request.headers.get("x-forwarded-for") ||
+            "Client";
+          const city =
+            request.headers.get("cf-ipcity") ||
+            (request as unknown as { cf?: { city?: string } }).cf?.city ||
+            "Unknown";
+          const isp =
+            request.headers.get("cf-isp") ||
+            (request as unknown as { cf?: { asOrganization?: string } }).cf?.asOrganization ||
+            "Unknown";
+          const userAgent =
+            (body["deviceInfo"] as string) || request.headers.get("user-agent") || "Web Browser";
+
+          const result = await saveUserToD1(db, {
+            userId: (body["userId"] || body["sessionId"] || `std_${Date.now()}`) as string,
+            name: (body["name"] || body["studentName"] || "Aspirant") as string,
+            ip,
+            city,
+            isp,
+            deviceInfo: userAgent,
+          });
+
+          return new Response(JSON.stringify(result), {
+            status: result.success ? 200 : 500,
+            headers: CORS_HEADERS,
+          });
+        } catch (err) {
+          return new Response(JSON.stringify({ success: false, error: (err as Error).message }), {
+            status: 500,
+            headers: CORS_HEADERS,
+          });
+        }
+      }
+
+      // Query D1 Users table directly to verify rows
+      if (url.pathname === "/api/users") {
+        if (request.method === "OPTIONS") {
+          return new Response(null, { status: 204, headers: CORS_HEADERS });
+        }
+        const db = getD1Database(env, request);
+        const users = await getUsersFromD1(db);
+        return new Response(JSON.stringify({ success: true, count: users.length, users }), {
+          status: 200,
+          headers: CORS_HEADERS,
+        });
+      }
+
+      // Handle Telegram Logger API & automatically save student into D1
       if (url.pathname === "/api/log") {
         if (request.method === "OPTIONS") {
           return new Response(null, { status: 204, headers: CORS_HEADERS });
         }
+
+        try {
+          const clonedReq = request.clone();
+          const body = (await clonedReq.json()) as Record<string, unknown>;
+          const studentName = (body["studentName"] || body["name"]) as string | undefined;
+          if (studentName && studentName.trim()) {
+            const db = getD1Database(env, request);
+            const ip =
+              request.headers.get("cf-connecting-ip") ||
+              request.headers.get("x-forwarded-for") ||
+              "Client";
+            const city =
+              request.headers.get("cf-ipcity") ||
+              (request as unknown as { cf?: { city?: string } }).cf?.city ||
+              "Unknown";
+            const isp =
+              request.headers.get("cf-isp") ||
+              (request as unknown as { cf?: { asOrganization?: string } }).cf?.asOrganization ||
+              "Unknown";
+            const userAgent =
+              (body["deviceInfo"] as string) || request.headers.get("user-agent") || "Web Browser";
+
+            saveUserToD1(db, {
+              userId: (body["sessionId"] || body["userId"] || `std_${Date.now()}`) as string,
+              name: studentName.trim(),
+              ip,
+              city,
+              isp,
+              deviceInfo: userAgent,
+            }).catch(() => {});
+          }
+        } catch {
+          // non-blocking
+        }
+
         return await processTelegramLog(request, env as Record<string, string> | undefined);
       }
 
