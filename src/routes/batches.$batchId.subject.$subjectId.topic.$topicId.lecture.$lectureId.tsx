@@ -335,24 +335,9 @@ function LecturePlayerView({
   >([]);
   const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
 
-  // Player Mode: "iframe" by default (direct embedding without proxying)
-  const [playerMode, setPlayerMode] = useState<"iframe" | "video">("iframe");
-
   // Resolve best stream URL directly without proxying
   const rawStreamUrl = videoData?.videoUrl || item.videoDetails?.videoUrl || item.url;
   const streamUrl = normalizeStreamUrl(rawStreamUrl);
-
-  // Derive direct iframe embed URL (e.g. YouTube embed or direct stream URL)
-  const iframeUrl = (() => {
-    if (!streamUrl) return "";
-    const ytMatch = streamUrl.match(
-      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/,
-    );
-    if (ytMatch) {
-      return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
-    }
-    return streamUrl;
-  })();
 
   const isDirectMp4 = Boolean(
     streamUrl && (streamUrl.includes(".mp4") || streamUrl.includes("/stream/")),
@@ -363,24 +348,15 @@ function LecturePlayerView({
 
   // Real-time PW XP Tracker: adds 1 watch second every second played (120s = 1 XP)
   useEffect(() => {
-    if (playerMode === "iframe") {
-      const interval = setInterval(() => {
-        if (typeof document !== "undefined" && document.visibilityState === "visible") {
-          addTime(1);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      if (!isPlaying) return;
-      const interval = setInterval(() => {
-        const v = videoRef.current;
-        if (v && !v.paused && !v.ended) {
-          addTime(1);
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [playerMode, isPlaying, addTime]);
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      const v = videoRef.current;
+      if (v && !v.paused && !v.ended) {
+        addTime(1);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPlaying, addTime]);
 
   // Sleep Timer Countdown Effect
   useEffect(() => {
@@ -402,9 +378,8 @@ function LecturePlayerView({
     return () => clearInterval(interval);
   }, [sleepTimerRemaining]);
 
-  // Initialize playback via native HTML5 video or HLS.js when in video mode
+  // Initialize playback via native HTML5 video or HLS.js
   useEffect(() => {
-    if (playerMode !== "video") return;
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
@@ -488,7 +463,7 @@ function LecturePlayerView({
       video.load();
       video.play().catch(() => {});
     }
-  }, [playerMode, streamUrl, isDirectMp4, item?.videoDetails?.videoUrl]);
+  }, [streamUrl, isDirectMp4, item?.videoDetails?.videoUrl]);
 
   const handleQualityChange = (levelIndex: number) => {
     setCurrentQualityIndex(levelIndex);
@@ -511,102 +486,63 @@ function LecturePlayerView({
       {/* Video Streaming Area */}
       {streamUrl ? (
         <div className="card-surface overflow-hidden p-3 sm:p-4 bg-card border border-border shadow-xs rounded-xl">
-          {playerMode === "iframe" ? (
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black shadow-lg">
-              <iframe
-                src={iframeUrl}
-                title={title}
-                className="h-full w-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-          ) : (
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black shadow-lg group">
-              <video
-                ref={videoRef}
-                controls
-                controlsList="nodownload"
-                onContextMenu={(e) => e.preventDefault()}
-                playsInline
-                poster={thumb}
-                className="h-full w-full object-contain cursor-pointer"
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black shadow-lg group">
+            <video
+              ref={videoRef}
+              controls
+              controlsList="nodownload"
+              onContextMenu={(e) => e.preventDefault()}
+              playsInline
+              poster={thumb}
+              className="h-full w-full object-contain cursor-pointer"
+              onClick={() => {
+                const v = videoRef.current;
+                if (!v) return;
+                if (v.paused) {
+                  v.play().catch(() => {});
+                } else {
+                  v.pause();
+                }
+              }}
+              onError={() => {
+                const v = videoRef.current;
+                if (!v || !streamUrl) return;
+                const alt = getAlternateStreamUrl(streamUrl);
+                if (alt && v.src !== alt) {
+                  v.src = alt;
+                  v.load();
+                  v.play().catch(() => {});
+                }
+              }}
+              onPlay={(e) => {
+                setIsPlaying(true);
+                e.currentTarget.playbackRate = playbackSpeed;
+              }}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+            />
+
+            {/* Prominent Center Play Button when paused */}
+            {!isPlaying && (
+              <button
+                type="button"
                 onClick={() => {
                   const v = videoRef.current;
-                  if (!v) return;
-                  if (v.paused) {
-                    v.play().catch(() => {});
-                  } else {
-                    v.pause();
-                  }
-                }}
-                onError={() => {
-                  const v = videoRef.current;
-                  if (!v || !streamUrl) return;
-                  const alt = getAlternateStreamUrl(streamUrl);
-                  if (alt && v.src !== alt) {
-                    v.src = alt;
-                    v.load();
+                  if (v) {
                     v.play().catch(() => {});
                   }
                 }}
-                onPlay={(e) => {
-                  setIsPlaying(true);
-                  e.currentTarget.playbackRate = playbackSpeed;
-                }}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-              />
-
-              {/* Prominent Center Play Button when paused */}
-              {!isPlaying && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const v = videoRef.current;
-                    if (v) {
-                      v.play().catch(() => {});
-                    }
-                  }}
-                  className="absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/95 hover:bg-primary text-primary-foreground shadow-xl transition hover:scale-105 cursor-pointer pointer-events-auto"
-                  aria-label="Play Lecture Video"
-                >
-                  <Play className="h-6 w-6 fill-current ml-0.5" />
-                </button>
-              )}
-            </div>
-          )}
+                className="absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/95 hover:bg-primary text-primary-foreground shadow-xl transition hover:scale-105 cursor-pointer pointer-events-auto"
+                aria-label="Play Lecture Video"
+              >
+                <Play className="h-6 w-6 fill-current ml-0.5" />
+              </button>
+            )}
+          </div>
 
           {/* Quick Controls, Speed, Sleep Timer & Quality Selectors */}
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              {/* Player Mode Switcher */}
-              <div className="flex items-center gap-1 p-0.5 bg-muted rounded-lg border border-border">
-                <button
-                  type="button"
-                  onClick={() => setPlayerMode("iframe")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer ${
-                    playerMode === "iframe"
-                      ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  iFrame Player
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPlayerMode("video")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer ${
-                    playerMode === "video"
-                      ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  HTML5 Video
-                </button>
-              </div>
-
               {duration && (
                 <span className="text-muted-foreground font-medium text-[11px]">
                   · Duration: {duration}
@@ -664,79 +600,72 @@ function LecturePlayerView({
                 )}
               </button>
 
-              {/* Controls visible in Video Mode */}
-              {playerMode === "video" && (
-                <>
-                  {/* Skip backward 10s */}
+              {/* Skip backward 10s */}
+              <button
+                type="button"
+                onClick={() => handleSeek(-10)}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
+                title="Rewind 10 seconds"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>10s</span>
+              </button>
+
+              {/* Skip forward 10s */}
+              <button
+                type="button"
+                onClick={() => handleSeek(10)}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
+                title="Forward 10 seconds"
+              >
+                <RotateCw className="h-3 w-3" />
+                <span>10s</span>
+              </button>
+
+              {/* Playback Speed Selectors */}
+              <div className="flex items-center gap-1">
+                <span className="text-muted-foreground text-[11px] font-medium mr-0.5">Speed:</span>
+                {[0.75, 1, 1.25, 1.5, 2].map((s) => (
                   <button
+                    key={s}
                     type="button"
-                    onClick={() => handleSeek(-10)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
-                    title="Rewind 10 seconds"
+                    onClick={() => {
+                      setPlaybackSpeed(s);
+                      if (videoRef.current) videoRef.current.playbackRate = s;
+                    }}
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
+                      playbackSpeed === s
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
                   >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>10s</span>
+                    {s}x
                   </button>
+                ))}
+              </div>
 
-                  {/* Skip forward 10s */}
-                  <button
-                    type="button"
-                    onClick={() => handleSeek(10)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground cursor-pointer"
-                    title="Forward 10 seconds"
-                  >
-                    <RotateCw className="h-3 w-3" />
-                    <span>10s</span>
-                  </button>
-
-                  {/* Playback Speed Selectors */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground text-[11px] font-medium mr-0.5">
-                      Speed:
-                    </span>
-                    {[0.75, 1, 1.25, 1.5, 2].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => {
-                          setPlaybackSpeed(s);
-                          if (videoRef.current) videoRef.current.playbackRate = s;
-                        }}
-                        className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
-                          playbackSpeed === s
-                            ? "bg-primary text-primary-foreground shadow-2xs"
-                            : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {s}x
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Quality Selectors */}
-                  {qualities.length > 0 && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 mr-0.5">
-                        <Sliders className="h-3 w-3 text-primary" />
-                        <span>Quality:</span>
-                      </span>
-                      {qualities.map((q) => (
-                        <button
-                          key={q.levelIndex}
-                          type="button"
-                          onClick={() => handleQualityChange(q.levelIndex)}
-                          className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
-                            currentQualityIndex === q.levelIndex
-                              ? "bg-primary text-primary-foreground shadow-2xs"
-                              : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
-                        >
-                          {q.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
+              {/* Quality Selectors */}
+              {qualities.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1 mr-0.5">
+                    <Sliders className="h-3 w-3 text-primary" />
+                    <span>Quality:</span>
+                  </span>
+                  {qualities.map((q) => (
+                    <button
+                      key={q.levelIndex}
+                      type="button"
+                      onClick={() => handleQualityChange(q.levelIndex)}
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition cursor-pointer ${
+                        currentQualityIndex === q.levelIndex
+                          ? "bg-primary text-primary-foreground shadow-2xs"
+                          : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </div>
