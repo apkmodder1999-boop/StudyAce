@@ -1,0 +1,12 @@
+name = "study-ace"
+compatibility_date = "2026-10-04"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[build]
+command = "npm run build"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "studyace"
+database_id = "6fc50a6e-f4ff-4d50-b54e-9626eb179dc1"
